@@ -1,0 +1,54 @@
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+import com.ftn.sbnz.model.NutritivniPlan;
+
+rule "Izracunaj BMR - Muskarci"
+    salience 50
+    when
+        $k: Korisnik($id: id, nivoAktivnosti != null) // DODATO: Cekamo da se zavrsi klasifikacija
+        not NutritivniPlan(korisnikId == $id)
+    then
+        NutritivniPlan np = new NutritivniPlan($id);
+        double bmr = 88.362 + (13.397 * $k.getTelesnaMasa()) + (4.799 * $k.getVisina()) - (5.677 * $k.getGodine());
+        np.setBmr(bmr);
+        insert(np);
+end
+
+rule "Izracunaj TDEE i Cilj - Gubitak Masti"
+    salience 50
+    when
+        $k: Korisnik($id: id, cilj == "GUBITAK_MASTI", nivoAktivnosti != null, $na: nivoAktivnosti)
+        $np: NutritivniPlan(korisnikId == $id, tdee == 0.0)
+    then
+        double faktor = $na.equals("NEAKTIVAN") ? 1.2 : ($na.equals("MINIMALNO_AKTIVAN") ? 1.375 : 1.55);
+        double tdee = $np.getBmr() * faktor;
+        double ciljKalorije = tdee - 500;
+        double proteini = 2.3 * $k.getTelesnaMasa();
+        double masti = (ciljKalorije * 0.20) / 9.0;
+        double hidrati = (ciljKalorije - (proteini * 4.0) - (masti * 9.0)) / 4.0;
+        
+        modify($np) {
+            setTdee(tdee), setCiljaneKalorije(ciljKalorije),
+            setProteiniGrama(proteini), setMastiGrama(masti), setUgljeniHidratiGrama(hidrati)
+        }
+end
+
+rule "Izracunaj TDEE i Cilj - Hipertrofija"
+    salience 50
+    when
+        $k: Korisnik($id: id, cilj == "HIPERTROFIJA", nivoAktivnosti != null, $na: nivoAktivnosti)
+        $np: NutritivniPlan(korisnikId == $id, tdee == 0.0)
+    then
+        double faktor = $na.equals("NEAKTIVAN") ? 1.2 : ($na.equals("MINIMALNO_AKTIVAN") ? 1.375 : 1.55);
+        double tdee = $np.getBmr() * faktor;
+        double ciljKalorije = tdee + 300;
+        double proteini = 2.0 * $k.getTelesnaMasa();
+        double masti = (ciljKalorije * 0.25) / 9.0;
+        double hidrati = (ciljKalorije - (proteini * 4.0) - (masti * 9.0)) / 4.0;
+        
+        modify($np) {
+            setTdee(tdee), setCiljaneKalorije(ciljKalorije),
+            setProteiniGrama(proteini), setMastiGrama(masti), setUgljeniHidratiGrama(hidrati)
+        }
+end

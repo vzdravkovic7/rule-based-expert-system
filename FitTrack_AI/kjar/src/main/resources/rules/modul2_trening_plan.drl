@@ -1,0 +1,79 @@
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+import com.ftn.sbnz.model.TreningIntenzitet;
+import com.ftn.sbnz.model.TreningPlan;
+import com.ftn.sbnz.model.Vezba;
+
+rule "Odredi Intenzitet - Nizak"
+    salience 50
+    when
+        $k: Korisnik(nivoAktivnosti == "NEAKTIVAN")
+        not TreningIntenzitet(korisnikId == $k.id)
+    then
+        insert(new TreningIntenzitet($k.getId(), "NIZAK"));
+end
+
+rule "Odredi Intenzitet - Umeren"
+    salience 50
+    when
+        $k: Korisnik(nivoAktivnosti == "MINIMALNO_AKTIVAN" || 
+                    (nivoAktivnosti == "AKTIVAN" && (pritisakKategorija == "PRE_HIPERTENZIJA" || pritisakKategorija == "HIPERTENZIJA_1")))
+        not TreningIntenzitet(korisnikId == $k.id)
+    then
+        insert(new TreningIntenzitet($k.getId(), "UMEREN"));
+end
+
+rule "Odredi Intenzitet - Visok"
+    salience 50
+    when
+        $k: Korisnik(nivoAktivnosti == "AKTIVAN", pritisakKategorija == "NORMALAN", bmiKategorija != "GOJAZNOST")
+        not TreningIntenzitet(korisnikId == $k.id)
+    then
+        insert(new TreningIntenzitet($k.getId(), "VISOK"));
+end
+
+rule "Generisi Plan - Gubitak Masti"
+    salience 50
+    when
+        $ti: TreningIntenzitet($id: korisnikId, $intenzitet: intenzitet)
+        $k: Korisnik(id == $id, cilj == "GUBITAK_MASTI")
+        not TreningPlan(korisnikId == $id)
+    then
+        TreningPlan plan = new TreningPlan($id);
+        plan.setKardioDani(4); plan.setSnagaDani(2);
+        if ($intenzitet.equals("NIZAK")) {
+            plan.setSerijeSnaga(1); plan.setPonavljanjaSnaga("10-15"); plan.setOdmorSekundi(90); plan.setKardioMinuta(10);
+        } else {
+            plan.setSerijeSnaga(2); plan.setPonavljanjaSnaga("10-15"); plan.setOdmorSekundi(75); plan.setKardioMinuta(20);
+        }
+        insert(plan);
+end
+
+rule "Generisi Plan - Hipertrofija"
+    salience 50
+    when
+        $ti: TreningIntenzitet($id: korisnikId, $intenzitet: intenzitet)
+        $k: Korisnik(id == $id, cilj == "HIPERTROFIJA")
+        not TreningPlan(korisnikId == $id)
+    then
+        TreningPlan plan = new TreningPlan($id);
+        plan.setKardioDani(1); plan.setSnagaDani(4);
+        if ($intenzitet.equals("VISOK")) {
+            plan.setSerijeSnaga(3); plan.setPonavljanjaSnaga("8-12"); plan.setOdmorSekundi(60); plan.setKardioMinuta(20);
+        } else {
+            plan.setSerijeSnaga(2); plan.setPonavljanjaSnaga("10-15"); plan.setOdmorSekundi(75); plan.setKardioMinuta(15);
+        }
+        insert(plan);
+end
+
+rule "Selekcija Vezbi - Bezbedno dodavanje u plan"
+    salience 40 // Za nijansu nizi prioritet da bi se plan prvo instancirao
+    when
+        $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
+        $k: Korisnik(id == $id)
+        $v: Vezba(kontraindikovanaZaPritisak == false, $naziv: naziv)
+        not String(this == $naziv) from $selektovane
+    then
+        modify($plan) { dodajVezbu($v.getNaziv()); }
+end

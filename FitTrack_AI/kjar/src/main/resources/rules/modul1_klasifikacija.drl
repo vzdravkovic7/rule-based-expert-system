@@ -1,0 +1,75 @@
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+
+rule "Klasifikacija BMI - Pothranjenost"
+    salience 100
+    no-loop true
+    when $k: Korisnik(getBmi() < 18.5, bmiKategorija == null)
+    then modify($k) { setBmiKategorija("POTHRANJENOST"); }
+end
+
+rule "Klasifikacija BMI - Normalno"
+    salience 100
+    no-loop true
+    when $k: Korisnik(getBmi() >= 18.5 && getBmi() < 25.0, bmiKategorija == null)
+    then modify($k) { setBmiKategorija("NORMALNO"); }
+end
+
+rule "Klasifikacija BMI - Prekomerna tezina"
+    salience 100
+    no-loop true
+    when $k: Korisnik(getBmi() >= 25.0 && getBmi() < 30.0, bmiKategorija == null)
+    then modify($k) { setBmiKategorija("PREKOMERNA_TEZINA"); }
+end
+
+rule "Klasifikacija BMI - Gojaznost"
+    salience 100
+    no-loop true
+    when $k: Korisnik(getBmi() >= 30.0, bmiKategorija == null)
+    then modify($k) { setBmiKategorija("GOJAZNOST"); }
+end
+
+rule "Klasifikacija KP - Normalan"
+    salience 100
+    no-loop true
+    when $k: Korisnik(sistolickiPritisak < 120 && dijastolickiPritisak < 80, pritisakKategorija == null)
+    then modify($k) { setPritisakKategorija("NORMALAN"); }
+end
+
+rule "Klasifikacija KP - Prehipertenzija"
+    salience 100
+    no-loop true
+    when $k: Korisnik((sistolickiPritisak >= 120 && sistolickiPritisak <= 139) || 
+                     (dijastolickiPritisak >= 80 && dijastolickiPritisak <= 89), pritisakKategorija == null)
+    then modify($k) { setPritisakKategorija("PRE_HIPERTENZIJA"); }
+end
+
+rule "Klasifikacija KP - Hipertenzija 1"
+    salience 100
+    no-loop true
+    when $k: Korisnik((sistolickiPritisak >= 140 && sistolickiPritisak <= 159) || 
+                     (dijastolickiPritisak >= 90 && dijastolickiPritisak <= 99), pritisakKategorija == null)
+    then modify($k) { setPritisakKategorija("HIPERTENZIJA_1"); }
+end
+
+rule "Klasifikacija Aktivnosti - Neaktivan"
+    salience 100
+    no-loop true
+    when $k: Korisnik(metMinutaNedeljno < 600, nivoAktivnosti == null)
+    then modify($k) { setNivoAktivnosti("NEAKTIVAN"); }
+end
+
+rule "Klasifikacija Aktivnosti - Minimalno Aktivan"
+    salience 100
+    no-loop true
+    when $k: Korisnik(metMinutaNedeljno >= 600 && metMinutaNedeljno < 1500, nivoAktivnosti == null)
+    then modify($k) { setNivoAktivnosti("MINIMALNO_AKTIVAN"); }
+end
+
+rule "Klasifikacija Aktivnosti - Aktivan"
+    salience 100
+    no-loop true
+    when $k: Korisnik(metMinutaNedeljno >= 1500, nivoAktivnosti == null)
+    then modify($k) { setNivoAktivnosti("AKTIVAN"); }
+end

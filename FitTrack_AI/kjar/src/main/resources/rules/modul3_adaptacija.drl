@@ -1,0 +1,48 @@
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+import com.ftn.sbnz.model.TreningPlan;
+import com.ftn.sbnz.model.TreningLog;
+import com.ftn.sbnz.model.NapredakDetektor;
+import com.ftn.sbnz.model.ProgresijaNalog;
+import java.time.LocalDate;
+
+rule "Detektuj Napredak - Spreman Za Progresiju"
+    salience 10
+    when
+        $k: Korisnik($id: id, nivoAktivnosti != null)
+        Number(intValue >= 3) from accumulate(
+            $log: TreningLog(korisnikId == $id, rpe <= 7, obradjen == false, datum.isAfter(LocalDate.now().minusDays(14))),
+            count($log)
+        )
+        not NapredakDetektor(korisnikId == $id)
+    then
+        insert(new NapredakDetektor($id, "SPREMAN_ZA_PROGRESIJU"));
+end
+
+rule "Odredi Tip Progresije - Povecaj Serije"
+    salience 10
+    when
+        $nd: NapredakDetektor($id: korisnikId, tip == "SPREMAN_ZA_PROGRESIJU")
+        $k: Korisnik(id == $id, nivoAktivnosti == "NEAKTIVAN" || nivoAktivnosti == "MINIMALNO_AKTIVAN")
+        $plan: TreningPlan(korisnikId == $id, serijeSnaga < 3)
+        not ProgresijaNalog(korisnikId == $id)
+    then
+        insert(new ProgresijaNalog($id, "POVECAJ_SERIJE"));
+end
+
+rule "Primeni Progresiju - Izvrsi"
+    salience 10
+    when
+        $pn: ProgresijaNalog($id: korisnikId, tip == "POVECAJ_SERIJE")
+        $plan: TreningPlan(korisnikId == $id)
+        $nd: NapredakDetektor(korisnikId == $id)
+        $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
+    then
+        modify($plan) { setSerijeSnaga($plan.getSerijeSnaga() + 1) }
+        for(Object obj : $neobradjeniLogovi) {
+            modify((TreningLog)obj) { setObradjen(true); }
+        }
+        retract($pn); 
+        retract($nd);
+end
