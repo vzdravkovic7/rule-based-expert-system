@@ -1,0 +1,31 @@
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+import com.ftn.sbnz.model.TreningIntenzitet;
+
+rule "Klasifikacija BMI - Prekomerna tezina"
+    no-loop true
+    when
+        $k: Korisnik(getBmi() >= 25.0 && getBmi() < 30.0, bmiKategorija == null)
+    then
+        modify($k) { setBmiKategorija("PREKOMERNA_TEZINA"); }
+        System.out.println(">>> Pravilo opalilo: Korisnik " + $k.getIme() + " ima prekomernu tezinu (BMI: " + String.format("%.2f", $k.getBmi()) + ")");
+end
+
+rule "Klasifikacija Aktivnosti - Neaktivan"
+    no-loop true
+    when
+        $k: Korisnik(metMinutaNedeljno < 600, nivoAktivnosti == null)
+    then
+        modify($k) { setNivoAktivnosti("NEAKTIVAN"); }
+        System.out.println(">>> Pravilo opalilo: Korisnik " + $k.getIme() + " je klasifikovan kao NEAKTIVAN.");
+end
+
+rule "Odredi Intenzitet - Nizak za Neaktivne"
+    when
+        $k: Korisnik(nivoAktivnosti == "NEAKTIVAN")
+        not TreningIntenzitet(korisnikId == $k.id)
+    then
+        insert(new TreningIntenzitet($k.getId(), "NIZAK"));
+        System.out.println(">>> Pravilo opalilo: Ubacen TreningIntenzitet NIZAK za korisnika " + $k.getIme());
+end
