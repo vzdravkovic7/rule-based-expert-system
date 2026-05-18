@@ -11,6 +11,7 @@ public class TreningPlan {
     private String ponavljanjaSnaga;
     private int odmorSekundi;
     private int kardioMinuta;
+    private boolean povecanaTezina = false;
     private List<String> selektovaneVezbe = new ArrayList<>();
 
     public TreningPlan() {
@@ -22,6 +23,14 @@ public class TreningPlan {
 
     public void dodajVezbu(String vezba) {
         this.selektovaneVezbe.add(vezba);
+    }
+
+    public boolean isPovecanaTezina() {
+        return povecanaTezina;
+    }
+
+    public void setPovecanaTezina(boolean povecanaTezina) {
+        this.povecanaTezina = povecanaTezina;
     }
 
     public Long getKorisnikId() {

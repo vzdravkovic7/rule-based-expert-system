@@ -8,6 +8,7 @@ public class NutritivniPlan {
     private double proteiniGrama;
     private double mastiGrama;
     private double ugljeniHidratiGrama;
+    private String komentarUnosa;
 
     public NutritivniPlan() {
     }
@@ -70,5 +71,13 @@ public class NutritivniPlan {
 
     public void setUgljeniHidratiGrama(double ugljeniHidratiGrama) {
         this.ugljeniHidratiGrama = ugljeniHidratiGrama;
+    }
+
+    public String getKomentarUnosa() {
+        return komentarUnosa;
+    }
+
+    public void setKomentarUnosa(String komentarUnosa) {
+        this.komentarUnosa = komentarUnosa;
     }
 }

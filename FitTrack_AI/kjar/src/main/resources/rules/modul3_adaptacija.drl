@@ -15,7 +15,7 @@ rule "Detektuj Napredak - Spreman Za Progresiju"
             $log: TreningLog(korisnikId == $id, rpe <= 7, obradjen == false, datum.isAfter(LocalDate.now().minusDays(14))),
             count($log)
         )
-        not NapredakDetektor(korisnikId == $id)
+        not NapredakDetektor(korisnikId == $id, tip == "SPREMAN_ZA_PROGRESIJU")
     then
         insert(new NapredakDetektor($id, "SPREMAN_ZA_PROGRESIJU"));
 end
@@ -31,18 +31,89 @@ rule "Odredi Tip Progresije - Povecaj Serije"
         insert(new ProgresijaNalog($id, "POVECAJ_SERIJE"));
 end
 
+rule "Odredi Tip Progresije - Povecaj Tezinu"
+    salience 10
+    when
+        $nd: NapredakDetektor($id: korisnikId, tip == "SPREMAN_ZA_PROGRESIJU")
+        $k: Korisnik(id == $id, nivoAktivnosti == "AKTIVAN")
+        $plan: TreningPlan(korisnikId == $id, serijeSnaga >= 3)
+        not ProgresijaNalog(korisnikId == $id)
+    then
+        insert(new ProgresijaNalog($id, "POVECAJ_TEZINU"));
+end
+
 rule "Primeni Progresiju - Izvrsi"
     salience 10
     when
-        $pn: ProgresijaNalog($id: korisnikId, tip == "POVECAJ_SERIJE")
+        $pn: ProgresijaNalog($id: korisnikId, $tip: tip)
         $plan: TreningPlan(korisnikId == $id)
-        $nd: NapredakDetektor(korisnikId == $id)
+        $nd: NapredakDetektor(korisnikId == $id, tip == "SPREMAN_ZA_PROGRESIJU")
         $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
     then
-        modify($plan) { setSerijeSnaga($plan.getSerijeSnaga() + 1) }
+        if ($tip.equals("POVECAJ_SERIJE")) {
+            modify($plan) { setSerijeSnaga($plan.getSerijeSnaga() + 1) }
+        } else {
+            System.out.println("[Progresija] Predlog: Povecati tezinu za 5% korisniku sa ID: " + $id);
+        }
         for(Object obj : $neobradjeniLogovi) {
             modify((TreningLog)obj) { setObradjen(true); }
         }
         retract($pn); 
         retract($nd);
+end
+
+rule "Detektuj Stagnaciju"
+    salience 10
+    when
+        $k: Korisnik($id: id)
+        not TreningLog(korisnikId == $id, obradjen == false, rpe <= 7, datum.isAfter(LocalDate.now().minusDays(21)))
+        $logovi: java.util.List(size > 0) from collect(TreningLog(korisnikId == $id, obradjen == false))
+        not NapredakDetektor(korisnikId == $id, tip == "STAGNACIJA")
+    then
+        insert(new NapredakDetektor($id, "STAGNACIJA"));
+end
+
+rule "Detektuj Preopterecenje"
+    salience 10
+    when
+        $k: Korisnik($id: id)
+        Number(intValue >= 3) from accumulate(
+            $log: TreningLog(korisnikId == $id, rpe >= 9, obradjen == false, datum.isAfter(LocalDate.now().minusDays(7))),
+            count($log)
+        )
+        not NapredakDetektor(korisnikId == $id, tip == "PREOPTERECENJE")
+    then
+        insert(new NapredakDetektor($id, "PREOPTERECENJE"));
+end
+
+rule "Primeni Deload"
+    salience 10
+    when
+        $nd: NapredakDetektor($id: korisnikId, tip == "PREOPTERECENJE")
+        $plan: TreningPlan(korisnikId == $id)
+        $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
+    then
+        int noveSerije = (int) Math.floor($plan.getSerijeSnaga() * 0.6);
+        if (noveSerije < 1) noveSerije = 1;
+        modify($plan) { setSerijeSnaga(noveSerije) }
+        for(Object obj : $neobradjeniLogovi) {
+            modify((TreningLog)obj) { setObradjen(true); }
+        }
+        retract($nd);
+        System.out.println("[Deload] Smanjen obim treninga za 40% usled preopterecenja.");
+end
+
+rule "Resetuj Progresiju"
+    salience 5
+    when
+        $nd: NapredakDetektor($id: korisnikId, tip == "STAGNACIJA")
+        $plan: TreningPlan(korisnikId == $id)
+        $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
+    then
+        modify($plan) { setKardioMinuta($plan.getKardioMinuta() + 5) }
+        for(Object obj : $neobradjeniLogovi) {
+            modify((TreningLog)obj) { setObradjen(true); }
+        }
+        retract($nd);
+        System.out.println("[Stagnacija] Program korigovan: dodato 5 minuta kardia.");
 end

@@ -3,10 +3,12 @@ package rules;
 import com.ftn.sbnz.model.Korisnik;
 import com.ftn.sbnz.model.NutritivniPlan;
 
-rule "Izracunaj BMR - Muskarci"
-    salience 50
+rule "Izracunaj BMR - Muski"
+    salience 60
+    no-loop true
     when
-        $k: Korisnik($id: id, nivoAktivnosti != null) // DODATO: Cekamo da se zavrsi klasifikacija
+        $k: Korisnik($id: id, nivoAktivnosti != null)
+        not Korisnik(id == $id, ime == "Jovana") 
         not NutritivniPlan(korisnikId == $id)
     then
         NutritivniPlan np = new NutritivniPlan($id);
@@ -15,40 +17,113 @@ rule "Izracunaj BMR - Muskarci"
         insert(np);
 end
 
-rule "Izracunaj TDEE i Cilj - Gubitak Masti"
-    salience 50
+rule "Izracunaj BMR - Zenski"
+    salience 60
+    no-loop true
     when
-        $k: Korisnik($id: id, cilj == "GUBITAK_MASTI", nivoAktivnosti != null, $na: nivoAktivnosti)
-        $np: NutritivniPlan(korisnikId == $id, tdee == 0.0)
+        $k: Korisnik($id: id, ime == "Jovana", nivoAktivnosti != null)
+        not NutritivniPlan(korisnikId == $id)
+    then
+        NutritivniPlan np = new NutritivniPlan($id);
+        double bmr = 447.593 + (9.247 * $k.getTelesnaMasa()) + (3.098 * $k.getVisina()) - (4.330 * $k.getGodine());
+        np.setBmr(bmr);
+        insert(np);
+end
+
+rule "Izracunaj TDEE"
+    salience 55
+    when
+        $k: Korisnik($id: id, $na: nivoAktivnosti)
+        $np: NutritivniPlan(korisnikId == $id, tdee == 0.0, bmr > 0.0)
     then
         double faktor = $na.equals("NEAKTIVAN") ? 1.2 : ($na.equals("MINIMALNO_AKTIVAN") ? 1.375 : 1.55);
-        double tdee = $np.getBmr() * faktor;
-        double ciljKalorije = tdee - 500;
+        modify($np) { setTdee($np.getBmr() * faktor) }
+end
+
+rule "Kalorijski Cilj - Gubitak Masti"
+    salience 50
+    when
+        $k: Korisnik($id: id, cilj == "GUBITAK_MASTI")
+        $np: NutritivniPlan(korisnikId == $id, ciljaneKalorije == 0.0, tdee > 0.0)
+    then
+        double deficit = $np.getTdee() - 500;
+        if (deficit < $np.getBmr()) { deficit = $np.getBmr(); }
+        modify($np) { setCiljaneKalorije(deficit) }
+end
+
+rule "Kalorijski Cilj - Hipertrofija"
+    salience 50
+    when
+        $k: Korisnik($id: id, cilj == "HIPERTROFIJA")
+        $np: NutritivniPlan(korisnikId == $id, ciljaneKalorije == 0.0, tdee > 0.0)
+    then
+        modify($np) { setCiljaneKalorije($np.getTdee() + 300) }
+end
+
+rule "Preporuka Makroa - Gubitak Masti"
+    salience 45
+    when
+        $k: Korisnik($id: id, cilj == "GUBITAK_MASTI")
+        $np: NutritivniPlan(korisnikId == $id, ciljaneKalorije > 0.0, proteiniGrama == 0.0)
+    then
         double proteini = 2.3 * $k.getTelesnaMasa();
-        double masti = (ciljKalorije * 0.20) / 9.0;
-        double hidrati = (ciljKalorije - (proteini * 4.0) - (masti * 9.0)) / 4.0;
-        
+        double masti = ($np.getCiljaneKalorije() * 0.20) / 9.0;
+        double hidrati = ($np.getCiljaneKalorije() - (proteini * 4.0) - (masti * 9.0)) / 4.0;
         modify($np) {
-            setTdee(tdee), setCiljaneKalorije(ciljKalorije),
-            setProteiniGrama(proteini), setMastiGrama(masti), setUgljeniHidratiGrama(hidrati)
+            setProteiniGrama(proteini),
+            setMastiGrama(masti),
+            setUgljeniHidratiGrama(hidrati)
         }
 end
 
-rule "Izracunaj TDEE i Cilj - Hipertrofija"
+rule "Preporuka Makroa - Hipertrofija"
+    salience 45
+    when
+        $k: Korisnik($id: id, cilj == "HIPERTROFIJA")
+        $np: NutritivniPlan(korisnikId == $id, ciljaneKalorije > 0.0, proteiniGrama == 0.0)
+    then
+        double proteini = 1.6 * $k.getTelesnaMasa();
+        double masti = ($np.getCiljaneKalorije() * 0.25) / 9.0;
+        double hidrati = ($np.getCiljaneKalorije() - (proteini * 4.0) - (masti * 9.0)) / 4.0;
+        modify($np) {
+            setProteiniGrama(proteini),
+            setMastiGrama(masti),
+            setUgljeniHidratiGrama(hidrati)
+        }
+end
+
+rule "Evaluacija Dnevnog Unosa - Deficit"
+    salience 40
+    when
+        $np: NutritivniPlan($id: korisnikId, ciljaneKalorije > 0.0, $cilj: ciljaneKalorije)
+        $k: Korisnik(id == $id, dnevniUnosKalorija > 0.0, dnevniUnosKalorija < ($cilj * 0.85))
+    then
+        modify($np) { setKomentarUnosa("NEDOVOLJAN_UNOS_DEFICIT") }
+end
+
+rule "Evaluacija Dnevnog Unosa - Suficit"
+    salience 40
+    when
+        $np: NutritivniPlan($id: korisnikId, ciljaneKalorije > 0.0, $cilj: ciljaneKalorije)
+        $k: Korisnik(id == $id, dnevniUnosKalorija > ($cilj * 1.15))
+    then
+        modify($np) { setKomentarUnosa("PREKOMERAN_UNOS_SUFICIT") }
+end
+
+rule "Evaluacija Makroa - Nedovoljno Proteina"
+    salience 40
+    when
+        $k: Korisnik($id: id, dnevniUnosProteina > 0.0, dnevniUnosProteina < (1.4 * telesnaMasa))
+        $np: NutritivniPlan(korisnikId == $id)
+    then
+        modify($np) { setKomentarUnosa("KRITICNO_NIZAK_PROTEIN") }
+end
+
+rule "Kalorijski Cilj - Opsta Kondicija"
     salience 50
     when
-        $k: Korisnik($id: id, cilj == "HIPERTROFIJA", nivoAktivnosti != null, $na: nivoAktivnosti)
-        $np: NutritivniPlan(korisnikId == $id, tdee == 0.0)
+        $k: Korisnik($id: id, cilj == "OPSTA_KONDICIJA")
+        $np: NutritivniPlan(korisnikId == $id, ciljaneKalorije == 0.0, tdee > 0.0)
     then
-        double faktor = $na.equals("NEAKTIVAN") ? 1.2 : ($na.equals("MINIMALNO_AKTIVAN") ? 1.375 : 1.55);
-        double tdee = $np.getBmr() * faktor;
-        double ciljKalorije = tdee + 300;
-        double proteini = 2.0 * $k.getTelesnaMasa();
-        double masti = (ciljKalorije * 0.25) / 9.0;
-        double hidrati = (ciljKalorije - (proteini * 4.0) - (masti * 9.0)) / 4.0;
-        
-        modify($np) {
-            setTdee(tdee), setCiljaneKalorije(ciljKalorije),
-            setProteiniGrama(proteini), setMastiGrama(masti), setUgljeniHidratiGrama(hidrati)
-        }
+        modify($np) { setCiljaneKalorije($np.getTdee()) }
 end

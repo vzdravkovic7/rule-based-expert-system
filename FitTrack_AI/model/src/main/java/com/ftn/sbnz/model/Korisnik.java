@@ -10,6 +10,8 @@ public class Korisnik {
     private int dijastolickiPritisak;
     private double metMinutaNedeljno;
     private String cilj;
+    private double dnevniUnosKalorija;
+    private double dnevniUnosProteina;
 
     private String bmiKategorija;
     private String pritisakKategorija;
@@ -74,6 +76,22 @@ public class Korisnik {
 
     public void setTelesnaMasa(double telesnaMasa) {
         this.telesnaMasa = telesnaMasa;
+    }
+
+    public double getDnevniUnosKalorija() {
+        return dnevniUnosKalorija;
+    }
+
+    public void setDnevniUnosKalorija(double dnevniUnosKalorija) {
+        this.dnevniUnosKalorija = dnevniUnosKalorija;
+    }
+
+    public double getDnevniUnosProteina() {
+        return dnevniUnosProteina;
+    }
+
+    public void setDnevniUnosProteina(double dnevniUnosProteina) {
+        this.dnevniUnosProteina = dnevniUnosProteina;
     }
 
     public int getSistolickiPritisak() {
