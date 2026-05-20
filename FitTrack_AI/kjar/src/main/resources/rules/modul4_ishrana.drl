@@ -7,27 +7,28 @@ rule "Izracunaj BMR - Muski"
     salience 60
     no-loop true
     when
-        $k: Korisnik($id: id, nivoAktivnosti != null)
-        not Korisnik(id == $id, ime == "Jovana") 
+        $k: Korisnik($id: id, pol == "MUSKI", nivoAktivnosti != null)
         not NutritivniPlan(korisnikId == $id)
     then
-        NutritivniPlan np = new NutritivniPlan($id);
         double bmr = 88.362 + (13.397 * $k.getTelesnaMasa()) + (4.799 * $k.getVisina()) - (5.677 * $k.getGodine());
+        NutritivniPlan np = new NutritivniPlan($id);
         np.setBmr(bmr);
         insert(np);
+        System.out.println("[Modul 4] Izracunat BMR za muskarca (" + $k.getIme() + "): " + bmr);
 end
 
 rule "Izracunaj BMR - Zenski"
     salience 60
     no-loop true
     when
-        $k: Korisnik($id: id, ime == "Jovana", nivoAktivnosti != null)
+        $k: Korisnik($id: id, pol == "ZENSKI", nivoAktivnosti != null)
         not NutritivniPlan(korisnikId == $id)
     then
-        NutritivniPlan np = new NutritivniPlan($id);
         double bmr = 447.593 + (9.247 * $k.getTelesnaMasa()) + (3.098 * $k.getVisina()) - (4.330 * $k.getGodine());
+        NutritivniPlan np = new NutritivniPlan($id);
         np.setBmr(bmr);
         insert(np);
+        System.out.println("[Modul 4] Izracunat BMR za zenu (" + $k.getIme() + "): " + bmr);
 end
 
 rule "Izracunaj TDEE"

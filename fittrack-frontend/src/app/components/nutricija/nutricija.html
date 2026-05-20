@@ -1,0 +1,74 @@
+<div class="nutricija-kontejner">
+    <div class="unos-panela">
+        <h3>Simulacija Unosa Hrane (Modul 4)</h3>
+        <div class="forma-grupa">
+            <label>Pol korisnika:</label>
+            <select [(ngModel)]="selekcijaPola" class="kontrola">
+                <option value="MUSKI">Muški</option>
+                <option value="ZENSKI">Ženski</option>
+            </select>
+        </div>
+        <div class="forma-grupa">
+            <label>Cilj korisnika:</label>
+            <select [(ngModel)]="selekcijaCilja" class="kontrola">
+                <option value="GUBITAK_MASTI">Gubitak Masti (Definicija)</option>
+                <option value="HIPERTROFIJA">Hipertrofija (Masa)</option>
+            </select>
+        </div>
+        <div class="forma-grupa">
+            <label>Današnji unos kalorija (kcal):</label>
+            <input type="number" [(ngModel)]="uneteKalorije" class="kontrola">
+        </div>
+        <div class="forma-grupa">
+            <label>Današnji unos proteina (g):</label>
+            <input type="number" [(ngModel)]="unetiProteini" class="kontrola">
+        </div>
+        <button (click)="izracunajNutriciju()" class="dugme-primeni">
+            Pokreni Drools Nutriciju
+        </button>
+    </div>
+
+    <div class="prikaz-panela">
+        <h3>SBNZ Nutritivni Plan & Evaluacija</h3>
+
+        @if (ucitavanje) {
+        <p class="info-poruka">Drools vrši proračune bazalnog metabolizma (BMR) i TDEE...</p>
+        } @else if (evaluacija && evaluacija.ciljaneKalorije) {
+        <div class="rezultati-mreza">
+            <div class="kartica kalorije">
+                <h5>Ciljane Kalorije</h5>
+                <p class="vrednost">{{ evaluacija.ciljaneKalorije | number:'1.0-0' }} kcal</p>
+            </div>
+            <div class="kartica makro">
+                <h5>Proteini</h5>
+                <p class="vrednost">{{ evaluacija.proteiniGrama | number:'1.0-0' }}g</p>
+            </div>
+            <div class="kartica makro">
+                <h5>Masti</h5>
+                <p class="vrednost">{{ evaluacija.mastiGrama | number:'1.0-0' }}g</p>
+            </div>
+            <div class="kartica makro">
+                <h5>Ugljeni Hidrati</h5>
+                <p class="vrednost">{{ evaluacija.ugljeniHidratiGrama | number:'1.0-0' }}g</p>
+            </div>
+        </div>
+
+        @if (evaluacija.komentarUnosa) {
+        <div class="alarm-kutija" [ngClass]="{
+          'opasnost': evaluacija.komentarUnosa.includes('KRITICNO') || evaluacija.komentarUnosa.includes('NEDOVOLJAN'),
+          'upozorenje': evaluacija.komentarUnosa.includes('PREKOMERAN')
+        }">
+            <h4>⚠️ SBNZ Evaluacija Unosa:</h4>
+            <p>{{ evaluacija.komentarUnosa }}</p>
+        </div>
+        } @else {
+        <div class="alarm-kutija uspeh">
+            <h4>✅ Unos je u granicama normale</h4>
+            <p>Korisnik prati generisani kalorijski deficit/suficit.</p>
+        </div>
+        }
+        } @else {
+        <p class="prazno-poruka">Unesite podatke i kliknite na dugme iznad za prikaz SBNZ preporuka.</p>
+        }
+    </div>
+</div>

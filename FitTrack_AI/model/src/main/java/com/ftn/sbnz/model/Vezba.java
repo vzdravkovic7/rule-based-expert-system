@@ -1,17 +1,22 @@
 package com.ftn.sbnz.model;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+@Entity
 public class Vezba {
+    @Id
     private String naziv;
-    private String vrsta;
+    private String javaVrsta;
     private String intenzitet;
     private boolean kontraindikovanaZaPritisak;
 
     public Vezba() {
     }
 
-    public Vezba(String naziv, String vrsta, String intenzitet, boolean kontraindikovanaZaPritisak) {
+    public Vezba(String naziv, String javaVrsta, String intenzitet, boolean kontraindikovanaZaPritisak) {
         this.naziv = naziv;
-        this.vrsta = vrsta;
+        this.javaVrsta = javaVrsta;
         this.intenzitet = intenzitet;
         this.kontraindikovanaZaPritisak = kontraindikovanaZaPritisak;
     }
@@ -24,12 +29,12 @@ public class Vezba {
         this.naziv = naziv;
     }
 
-    public String getVrsta() {
-        return vrsta;
+    public String getJavaVrsta() {
+        return javaVrsta;
     }
 
-    public void setVrsta(String vrsta) {
-        this.vrsta = vrsta;
+    public void setJavaVrsta(String javaVrsta) {
+        this.javaVrsta = javaVrsta;
     }
 
     public String getIntenzitet() {

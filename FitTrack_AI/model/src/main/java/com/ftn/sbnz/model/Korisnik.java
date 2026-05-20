@@ -4,6 +4,7 @@ public class Korisnik {
     private Long id;
     private String ime;
     private int godine;
+    private String pol;
     private double visina;
     private double telesnaMasa;
     private int sistolickiPritisak;
@@ -12,6 +13,7 @@ public class Korisnik {
     private String cilj;
     private double dnevniUnosKalorija;
     private double dnevniUnosProteina;
+    private boolean senior = false;
 
     private String bmiKategorija;
     private String pritisakKategorija;
@@ -25,12 +27,14 @@ public class Korisnik {
         this.id = id;
         this.ime = ime;
         this.godine = godine;
+        this.pol = "MUSKI";
         this.visina = visina;
         this.telesnaMasa = telesnaMasa;
         this.sistolickiPritisak = sistolickiPritisak;
         this.dijastolickiPritisak = dijastolickiPritisak;
         this.metMinutaNedeljno = metMinutaNedeljno;
         this.cilj = cilj;
+        this.senior = false;
     }
 
     public double getBmi() {
@@ -44,6 +48,22 @@ public class Korisnik {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public boolean isSenior() {
+        return senior;
+    }
+
+    public void setSenior(boolean senior) {
+        this.senior = senior;
+    }
+
+    public String getPol() {
+        return pol;
+    }
+
+    public void setPol(String pol) {
+        this.pol = pol;
     }
 
     public String getIme() {

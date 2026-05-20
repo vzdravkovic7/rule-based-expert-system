@@ -12,6 +12,7 @@ public class TreningPlan {
     private int odmorSekundi;
     private int kardioMinuta;
     private boolean povecanaTezina = false;
+    private String porukaProgresa = "";
     private List<String> selektovaneVezbe = new ArrayList<>();
 
     public TreningPlan() {
@@ -47,6 +48,14 @@ public class TreningPlan {
 
     public void setKardioDani(int kardioDani) {
         this.kardioDani = kardioDani;
+    }
+
+    public String getPorukaProgresa() {
+        return porukaProgresa;
+    }
+
+    public void setPorukaProgresa(String porukaProgresa) {
+        this.porukaProgresa = porukaProgresa;
     }
 
     public int getSnagaDani() {
