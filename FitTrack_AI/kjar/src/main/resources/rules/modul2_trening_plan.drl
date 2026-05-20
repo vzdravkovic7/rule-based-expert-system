@@ -85,6 +85,20 @@ rule "GenerisiPlan_OpstaKondicija"
         insert(plan);
 end
 
+rule "PrilagodiPlan_SeniorVisokRizik"
+    salience 47
+    no-loop true
+    when
+        $k: Korisnik(senior == true, pritisakKategorija == "HIPERTENZIJA_2" || bmiKategorija == "GOJAZNOST")
+        $plan: TreningPlan(korisnikId == $k.id, kardioDani > 2) 
+    then
+        modify($plan) {
+            setKardioDani(2),
+            setSnagaDani(1)
+        }
+        System.out.println("[Modul 2] Plan je prilagođen za seniora sa visokim rizikom: " + $k.getIme());
+end
+
 rule "OdredjivanjeSerijaRepova_Nizak"
     salience 40
     when
@@ -129,7 +143,7 @@ rule "SelekcijaVezbi_BezSnage"
     when
         $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
         $k: Korisnik(id == $id, pritisakKategorija == "HIPERTENZIJA_2" || bmiKategorija == "GOJAZNOST")
-        $v: Vezba(vrsta == "KARDIO", Pediatric: kontraindikovanaZaPritisak == false, $naziv: naziv)
+        $v: Vezba(javaVrsta == "KARDIO", Pediatric: kontraindikovanaZaPritisak == false, $naziv: naziv)
         not String(this == $naziv) from $selektovane
     then
         modify($plan) { dodajVezbu($v.getNaziv()); }
@@ -184,4 +198,16 @@ rule "KardioMinutaza_Visok"
         $plan: TreningPlan(korisnikId == $id, kardioMinuta == 0)
     then
         modify($plan) { setKardioMinuta(30); }
+end
+
+rule "SelekcijaVezbi_Standard"
+    salience 35
+    when
+        $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
+        $ti: TreningIntenzitet(korisnikId == $id, $intenzitet: intenzitet)
+        $k: Korisnik(id == $id, pritisakKategorija == "NORMALAN", bmiKategorija == "NORMALNO")
+        $v: Vezba(intenzitet == $intenzitet, javaVrsta == "SNAGA" || javaVrsta == "KARDIO", $naziv: naziv)
+        not String(this == $naziv) from $selektovane
+    then
+        modify($plan) { dodajVezbu($v.getNaziv()); }
 end

@@ -51,8 +51,14 @@ rule "Primeni Progresiju - Izvrsi"
         $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
     then
         if ($tip.equals("POVECAJ_SERIJE")) {
-            modify($plan) { setSerijeSnaga($plan.getSerijeSnaga() + 1) }
+            modify($plan) { 
+                setSerijeSnaga($plan.getSerijeSnaga() + 1),
+                setPorukaProgresa("Progresija: Uspešno povećan broj serija snage!")
+            }
         } else {
+            modify($plan) { 
+                setPorukaProgresa("PREDLOG: Povećajte radne težine za 5% na sledećem treningu (dostignut maksimalan obim serija).")
+            }
             System.out.println("[Progresija] Predlog: Povecati tezinu za 5% korisniku sa ID: " + $id);
         }
         for(Object obj : $neobradjeniLogovi) {
@@ -68,13 +74,14 @@ rule "Detektuj Stagnaciju"
         $k: Korisnik($id: id)
         not TreningLog(korisnikId == $id, obradjen == false, rpe <= 7, datum.isAfter(LocalDate.now().minusDays(21)))
         $logovi: java.util.List(size > 0) from collect(TreningLog(korisnikId == $id, obradjen == false))
+        not NapredakDetektor(korisnikId == $id, tip == "PREOPTERECENJE")
         not NapredakDetektor(korisnikId == $id, tip == "STAGNACIJA")
     then
         insert(new NapredakDetektor($id, "STAGNACIJA"));
 end
 
 rule "Detektuj Preopterecenje"
-    salience 10
+    salience 12
     when
         $k: Korisnik($id: id)
         Number(intValue >= 3) from accumulate(
@@ -95,7 +102,10 @@ rule "Primeni Deload"
     then
         int noveSerije = (int) Math.floor($plan.getSerijeSnaga() * 0.6);
         if (noveSerije < 1) noveSerije = 1;
-        modify($plan) { setSerijeSnaga(noveSerije) }
+        modify($plan) { 
+            setSerijeSnaga(noveSerije),
+            setPorukaProgresa("Deload: Smanjen obim treninga usled preopterecenja.")
+        }
         for(Object obj : $neobradjeniLogovi) {
             modify((TreningLog)obj) { setObradjen(true); }
         }
@@ -110,7 +120,10 @@ rule "Resetuj Progresiju"
         $plan: TreningPlan(korisnikId == $id)
         $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
     then
-        modify($plan) { setKardioMinuta($plan.getKardioMinuta() + 5) }
+        modify($plan) { 
+            setKardioMinuta($plan.getKardioMinuta() + 5),
+            setPorukaProgresa("Stagnacija: Program korigovan, dodato 5 minuta kardia.")
+        }
         for(Object obj : $neobradjeniLogovi) {
             modify((TreningLog)obj) { setObradjen(true); }
         }

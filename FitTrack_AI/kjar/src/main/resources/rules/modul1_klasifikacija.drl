@@ -109,5 +109,5 @@ rule "Klasifikacija Starosti - Senior"
     when
         $k: Korisnik(godine > 64)
     then
-        System.out.println("[Modul 1] Korisnik " + $k.getIme() + " je klasifikovan kao SENIOR.");
+        modify($k) { setSenior(true); }
 end

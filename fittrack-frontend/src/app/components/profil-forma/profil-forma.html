@@ -1,0 +1,128 @@
+<div class="fittrack-container">
+    <h2 class="fittrack-title">FitTrack AI - Upravljanje Treningom</h2>
+    <small style="color: #666;">Sistemi bazirani na znanju</small>
+    <hr />
+
+    <div class="fittrack-layout">
+        <div class="form-section">
+            <h3>Unos Profila Korisnika</h3>
+
+            <div class="form-group">
+                <label>ID Korisnika:</label>
+                <input type="number" [(ngModel)]="profil.id" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label>Ime:</label>
+                <input type="text" [(ngModel)]="profil.ime" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label>Godine:</label>
+                <input type="number" [(ngModel)]="profil.godine" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label>Visina (cm) i Masa (kg):</label>
+                <div class="row-inputs">
+                    <input type="number" placeholder="Visina" [(ngModel)]="profil.visina" class="form-control" />
+                    <input type="number" placeholder="Masa" [(ngModel)]="profil.telesnaMasa" class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Krvni Pritisak (Sys / Dia):</label>
+                <div class="row-inputs">
+                    <input type="number" placeholder="Sistolički" [(ngModel)]="profil.sistolickiPritisak"
+                        class="form-control" />
+                    <input type="number" placeholder="Dijastolički" [(ngModel)]="profil.dijastolickiPritisak"
+                        class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Nedeljno MET-minuta (IPAQ):</label>
+                <input type="number" [(ngModel)]="profil.metMinutaNedeljno" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label>Cilj treninga:</label>
+                <select [(ngModel)]="profil.cilj" class="form-control">
+                    <option value="GUBITAK_MASTI">Gubitak Masti</option>
+                    <option value="HIPERTROFIJA">Hipertrofija</option>
+                    <option value="OPSTA_KONDICIJA">Opšta Kondicija</option>
+                </select>
+            </div>
+
+            <button (click)="posaljiProfil()" class="submit-btn">
+                Pokreni Drools Rezonovanje
+            </button>
+        </div>
+
+        <div class="result-section">
+            <h3>Generisani Trening Plan</h3>
+
+            @if (ucitavanje) {
+            <div class="status-msg">Učitavanje i obrada pravila u KieSession...</div>
+            } @else if (greska) {
+            <div class="error-msg">{{ greska }}</div>
+            } @else if (plan) {
+            <div class="classification-results"
+                style="margin-bottom: 20px; padding: 10px; background: #f0f4f8; border-radius: 6px;">
+                @if (plan.isSenior) {<div class="badge badge-warning">
+                    🧓 Senior režim aktiviran (Bezbednost na prvom mestu)
+                </div> }
+                <h4>Rezultati SBNZ Klasifikacije:</h4>
+                <p>BMI Kategorija: <span class="badge">{{ plan.bmiKategorija }}</span></p>
+                <p>Krvni Pritisak: <span class="badge">{{ plan.pritisakKategorija }}</span></p>
+                <p>Nivo Aktivnosti: <span class="badge">{{ plan.nivoAktivnosti }}</span></p>
+                <p>Izračunati Intenzitet: <span class="badge" style="color: red; font-weight: bold;">{{
+                        plan.intenzitetTreninga }}</span></p>
+            </div>
+            <table class="plan-table">
+                <tr>
+                    <td><strong>Kardio dani:</strong></td>
+                    <td class="val">{{ plan.kardioDani }} nedeljno</td>
+                </tr>
+                <tr>
+                    <td><strong>Dani snage:</strong></td>
+                    <td class="val">{{ plan.snagaDani }} nedeljno</td>
+                </tr>
+                <tr>
+                    <td><strong>Serije za snagu:</strong></td>
+                    <td class="val">{{ plan.serijeSnaga }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Ponavljanja:</strong></td>
+                    <td class="val">{{ plan.ponavljanjaSnaga }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Odmor između serija:</strong></td>
+                    <td class="val">{{ plan.odmorSekundi }} sekundi</td>
+                </tr>
+                <tr>
+                    <td><strong>Trajanje kardia:</strong></td>
+                    <td class="val">{{ plan.kardioMinuta }} minuta</td>
+                </tr>
+            </table>
+
+            <div style="margin-top: 20px;">
+                <h4>Selektovane bezbedne vežbe:</h4>
+                <ul class="exercise-list">
+                    @for (vezba of plan.selektovaneVezbe; track vezba) {
+                    <li class="exercise-item">{{ vezba }}</li>
+                    } @empty {
+                    <li style="color: #888; font-style: italic; list-style: none;">
+                        Nema selektovanih vežbi (Proverite bazu/kontraindikacije u pravilima).
+                    </li>
+                    }
+                </ul>
+            </div>
+            } @else {
+            <div class="status-msg">
+                Unesite podatke i kliknite na dugme da biste videli rezultate forward chaining-a.
+            </div>
+            }
+        </div>
+    </div>
+</div>

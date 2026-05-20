@@ -1,0 +1,29 @@
+<div class="app-container">
+    <header class="app-header">
+        <h1>FitTrack AI - SBNZ Dashboard</h1>
+    </header>
+
+    <nav class="tab-navigation">
+        <button [class.active]="aktivniTab() === 'profil'" (click)="promeniTab('profil')">
+            📋 Profil i Trening Plan (Modul 1 & 2)
+        </button>
+        <button [class.active]="aktivniTab() === 'nutricija'" (click)="promeniTab('nutricija')">
+            🥗 Nutritivni Plan (Modul 4)
+        </button>
+        <button [class.active]="aktivniTab() === 'logovi'" (click)="promeniTab('logovi')">
+            💪 Evaluacija Progresa (Modul 3)
+        </button>
+    </nav>
+
+    <main class="tab-content">
+        @if (aktivniTab() === 'profil') {
+        <app-profil-forma></app-profil-forma>
+        }
+        @if (aktivniTab() === 'nutricija') {
+        <app-nutricija></app-nutricija>
+        }
+        @if (aktivniTab() === 'logovi') {
+        <app-trening-log></app-trening-log>
+        }
+    </main>
+</div>
