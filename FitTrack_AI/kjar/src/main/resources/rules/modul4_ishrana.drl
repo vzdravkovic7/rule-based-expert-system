@@ -47,9 +47,9 @@ rule "Kalorijski Cilj - Gubitak Masti"
         $k: Korisnik($id: id, cilj == "GUBITAK_MASTI")
         $np: NutritivniPlan(korisnikId == $id, ciljaneKalorije == 0.0, tdee > 0.0)
     then
-        double deficit = $np.getTdee() - 500;
-        if (deficit < $np.getBmr()) { deficit = $np.getBmr(); }
-        modify($np) { setCiljaneKalorije(deficit) }
+        double proracunatiDeficit = $np.getTdee() - 500;
+        double konacneKalorije = Math.max(proracunatiDeficit, $np.getBmr());
+        modify($np) { setCiljaneKalorije(konacneKalorije) }
 end
 
 rule "Kalorijski Cilj - Hipertrofija"

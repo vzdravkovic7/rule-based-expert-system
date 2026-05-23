@@ -108,7 +108,7 @@ rule "OdredjivanjeSerijaRepova_Nizak"
         modify($plan) {
             setSerijeSnaga(1),
             setPonavljanjaSnaga("10-15"),
-            setOdmorSekundi(90);
+            setOdmorSekundi(90)
         }
 end
 
@@ -121,7 +121,7 @@ rule "OdredjivanjeSerijaRepova_Umeren"
         modify($plan) {
             setSerijeSnaga(2),
             setPonavljanjaSnaga("10-15"),
-            setOdmorSekundi(75);
+            setOdmorSekundi(75)
         }
 end
 
@@ -134,7 +134,7 @@ rule "OdredjivanjeSerijaRepova_Visok"
         modify($plan) {
             setSerijeSnaga(3),
             setPonavljanjaSnaga("8-12"),
-            setOdmorSekundi(60);
+            setOdmorSekundi(60)
         }
 end
 
@@ -143,7 +143,7 @@ rule "SelekcijaVezbi_BezSnage"
     when
         $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
         $k: Korisnik(id == $id, pritisakKategorija == "HIPERTENZIJA_2" || bmiKategorija == "GOJAZNOST")
-        $v: Vezba(javaVrsta == "KARDIO", Pediatric: kontraindikovanaZaPritisak == false, $naziv: naziv)
+        $v: Vezba(javaVrsta == "KARDIO", kontraindikovanaZaPritisak == false, $naziv: naziv)
         not String(this == $naziv) from $selektovane
     then
         modify($plan) { dodajVezbu($v.getNaziv()); }
