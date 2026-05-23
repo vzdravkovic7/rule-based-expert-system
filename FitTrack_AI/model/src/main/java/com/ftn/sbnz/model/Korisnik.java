@@ -18,6 +18,10 @@ public class Korisnik {
     private String bmiKategorija;
     private String pritisakKategorija;
     private String nivoAktivnosti;
+    private int maxPuls;
+    private int ciljnaZonaGornja;
+    private int ciljnaZonaDonja;
+    private int pulsUMirovanju;
 
     public Korisnik() {
     }
@@ -168,5 +172,37 @@ public class Korisnik {
 
     public void setNivoAktivnosti(String nivoAktivnosti) {
         this.nivoAktivnosti = nivoAktivnosti;
+    }
+
+    public int getMaxPuls() {
+        return maxPuls;
+    }
+
+    public void setMaxPuls(int maxPuls) {
+        this.maxPuls = maxPuls;
+    }
+
+    public int getCiljnaZonaGornja() {
+        return ciljnaZonaGornja;
+    }
+
+    public void setCiljnaZonaGornja(int ciljnaZonaGornja) {
+        this.ciljnaZonaGornja = ciljnaZonaGornja;
+    }
+
+    public int getCiljnaZonaDonja() {
+        return ciljnaZonaDonja;
+    }
+
+    public void setCiljnaZonaDonja(int ciljnaZonaDonja) {
+        this.ciljnaZonaDonja = ciljnaZonaDonja;
+    }
+
+    public int getPulsUMirovanju() {
+        return pulsUMirovanju;
+    }
+
+    public void setPulsUMirovanju(int pulsUMirovanju) {
+        this.pulsUMirovanju = pulsUMirovanju;
     }
 }

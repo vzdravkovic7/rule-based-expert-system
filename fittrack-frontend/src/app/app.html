@@ -13,6 +13,10 @@
         <button [class.active]="aktivniTab() === 'logovi'" (click)="promeniTab('logovi')">
             💪 Evaluacija Progresa (Modul 3)
         </button>
+        <button [class.active]="aktivniTab() === 'cep'" (click)="promeniTab('cep')"
+            style="background: #fef08a; color: #854d0e; font-weight: bold;">
+            ❤️ CEP Monitor Pulsa (Modul 5)
+        </button>
     </nav>
 
     <main class="tab-content">
@@ -24,6 +28,9 @@
         }
         @if (aktivniTab() === 'logovi') {
         <app-trening-log></app-trening-log>
+        }
+        @if (aktivniTab() === 'cep') {
+        <app-cep-simulacija></app-cep-simulacija>
         }
     </main>
 </div>

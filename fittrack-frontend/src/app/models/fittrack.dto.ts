@@ -65,3 +65,31 @@ export interface TreningLog {
     obradjen: boolean;
     datum: string;
 }
+
+export interface PulsSimulacijaEventDTO {
+    bpm: number;
+    sekundiOdPocetka: number;
+}
+
+export interface CEPSimulacijaZahtevDTO {
+    korisnikId: number;
+    godine: number;
+    pulsUMirovanju: number;
+    pritisakKategorija: string;
+    intenzitetTreninga: 'NIZAK' | 'UMEREN' | 'VISOK';
+    aktivnaSesija: boolean;
+    pulsniDogadjaji: PulsSimulacijaEventDTO[];
+}
+
+export interface CEPAlarmDTO {
+    nazivPravila: string;
+    nivo: 'VISOKI' | 'SREDNJI' | 'KRITICNI' | 'POTVRDA';
+    poruka: string;
+}
+
+export interface CEPSimulacijaIzlazDTO {
+    izracunatMaxPuls: number;
+    ciljnaZonaDonja: number;
+    ciljnaZonaGornja: number;
+    aktiviraniAlarmi: CEPAlarmDTO[];
+}
