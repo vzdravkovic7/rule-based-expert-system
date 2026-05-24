@@ -28,7 +28,7 @@ public class TreningController {
         korisnik.setNivoAktivnosti("MINIMALNO_AKTIVAN");
 
         TreningPlan plan = new TreningPlan(dto.korisnikId);
-        plan.setSerijeSnaga(2); // Povecati na 3 i aktivnost na AKTIVAN - demo pravila za povecanje snage
+        plan.setSerijeSnaga(2);
         plan.setKardioMinuta(20);
 
         kieSession.insert(korisnik);

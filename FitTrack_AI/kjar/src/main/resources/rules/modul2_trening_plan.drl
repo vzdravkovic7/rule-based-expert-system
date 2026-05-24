@@ -10,7 +10,7 @@ rule "BezbednosnaBlokada_Hipertenzija2"
     no-loop true
     when
         $k: Korisnik($id: id, pritisakKategorija == "HIPERTENZIJA_2")
-        $plan: TreningPlan(korisnikId == $id)
+        $plan: TreningPlan(korisnikId == $id, snagaDani > 0 || kardioDani > 0)
     then
         modify($plan) {
             setSnagaDani(0),
@@ -86,7 +86,7 @@ rule "DopuniPostojeciPlan_Hipertrofija"
     salience 46
     no-loop true
     when
-        $k: Korisnik($id: id, cilj == "HIPERTROFIJA")
+        $k: Korisnik($id: id, cilj == "HIPERTROFIJA", pritisakKategorija != "HIPERTENZIJA_2")
         $plan: TreningPlan(korisnikId == $id, kardioDani == 0)
     then
         modify($plan) { setKardioDani(1), setSnagaDani(4) }

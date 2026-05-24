@@ -1,0 +1,165 @@
+<div class="log-kontejner">
+    <div class="unos-panela">
+        <h3>Ciljna Rezonovanja i Preduslovi (Modul 6)</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+            Sistem rezonuje unazad (Backward Chaining) od zadatog cilja ka preduslovima plana i zdravstvenog statusa.
+        </p>
+
+        <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+            <button (click)="postaviScenario('idealan')"
+                style="padding: 6px 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📍
+                Scenario 1: Idealan Plan</button>
+            <button (click)="postaviScenario('rizik')"
+                style="padding: 6px 10px; background: #c0392b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📍
+                Scenario 2: Kontraindikacije</button>
+            <button (click)="postaviScenario('stagnacija')"
+                style="padding: 6px 10px; background: #d35400; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📍
+                Scenario 3: Loš Tempo</button>
+        </div>
+
+        <div
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f9f9f9; padding: 15px; border-radius: 6px; border: 1px dashed #ccc; margin-bottom: 20px;">
+            <div class="forma-grupa">
+                <label>Godine korisnika:</label>
+                <input type="number" [(ngModel)]="godine" class="kontrola"
+                    style="width: 90%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div class="forma-grupa">
+                <label>BMI Vrednost:</label>
+                <input type="number" step="0.1" [(ngModel)]="bmi" class="kontrola"
+                    style="width: 90%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div class="forma-grupa">
+                <label>Krvni Pritisak:</label>
+                <select [(ngModel)]="pritisakKategorija"
+                    style="width: 95%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="NORMALAN">Normalan pritisak</option>
+                    <option value="HIPERTENZIJA_1">Hipertenzija Step 1</option>
+                    <option value="HIPERTENZIJA_2">Hipertenzija Step 2</option>
+                </select>
+            </div>
+            <div class="forma-grupa">
+                <label>Tip Cilja:</label>
+                <select [(ngModel)]="tipCilja"
+                    style="width: 95%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="GUBITAK_MASTI">Gubitak Telesnih Masti</option>
+                    <option value="MISICNA_MASA">Izgradnja Mišićne Mase</option>
+                </select>
+            </div>
+            <div class="forma-grupa">
+                <label>Ciljni % Masti:</label>
+                <input type="number" step="0.1" [(ngModel)]="ciljniProcenatMasti" class="kontrola"
+                    style="width: 90%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div class="forma-grupa">
+                <label>Planirani Deficit (kcal):</label>
+                <input type="number" [(ngModel)]="kalorijskiDeficit" class="kontrola"
+                    style="width: 90%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div class="forma-grupa">
+                <label>Predviđeni Trening:</label>
+                <select [(ngModel)]="tipTreninga"
+                    style="width: 95%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="KARDIO">Kardio Fokus</option>
+                    <option value="SNAGA">Trening Snage</option>
+                    <option value="KOMBINOVANO">Kombinovani trening</option>
+                </select>
+            </div>
+            <div class="forma-grupa">
+                <label>Nivo Aktivnosti Plana:</label>
+                <select [(ngModel)]="nivoAktivnosti"
+                    style="width: 95%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="NIZAK">Nizak intenzitet</option>
+                    <option value="SREDNJI">Srednji intenzitet</option>
+                    <option value="VISOK">Visok intenzitet</option>
+                </select>
+            </div>
+            <div class="forma-grupa">
+                <label>Planiran Protein (g):</label>
+                <input type="number" [(ngModel)]="dnevniProtein" class="kontrola"
+                    style="width: 90%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div class="forma-grupa">
+                <label>Nedeljni Progres mase (kg):</label>
+                <input type="number" step="0.1" [(ngModel)]="promenaMasePoslednjihNedelja" class="kontrola"
+                    style="width: 90%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+        </div>
+
+        <button (click)="pokreniBackwardRezonovanje()" class="dugme-evaluiraj" style="background: #8e44ad;">
+            🔍 Pokreni Drools Backward Chaining Dokazivanje
+        </button>
+    </div>
+
+    <div class="prikaz-panela">
+        <h3>Logički Zaključci Izvedeni Unazad</h3>
+        @if (ucitavanje) {
+        <p>Drools otvara stablo ciljeva i evaluira preduslove unazad...</p>
+        } @else if (rezultat) {
+        <div class="obavestenje-uspeh" [style.border-left-color]="rezultat.programBezbedan ? '#2ecc71' : '#e74c3c'"
+            [style.background-color]="rezultat.programBezbedan ? '#f9fbf9' : '#fdfaf9'">
+            <h4>🏁 Dokazivanje ciljeva završeno</h4>
+            <p>Rezultati Drools Backward Chaining upita (Pravila 52-55):</p>
+        </div>
+
+        <ul class="novi-parametri">
+            <li>
+                Pravilo 52 (Telesni sastav adekvatan):
+                <span [style.background]="rezultat.telesniSastavIspunjen ? '#d4edda' : '#f8d7da'"
+                    [style.color]="rezultat.telesniSastavIspunjen ? '#155724' : '#721c24'"
+                    style="padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">
+                    {{ rezultat.telesniSastavIspunjen ? 'ZADOVOLJENO ✔' : 'NEZADOVOLJENO ❌' }}
+                </span>
+            </li>
+            <li>
+                Pravilo 53 (Nutritivni preduslovi i opterećenje):
+                <span [style.background]="rezultat.nutritivniPredusloviIspunjen ? '#d4edda' : '#f8d7da'"
+                    [style.color]="rezultat.nutritivniPredusloviIspunjen ? '#155724' : '#721c24'"
+                    style="padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">
+                    {{ rezultat.nutritivniPredusloviIspunjen ? 'ZADOVOLJENO ✔' : 'NEZADOVOLJENO ❌' }}
+                </span>
+            </li>
+            <li>
+                Pravilo 54 (Bezbednost programa):
+                <span [style.background]="rezultat.programBezbedan ? '#d4edda' : '#f8d7da'"
+                    [style.color]="rezultat.programBezbedan ? '#155724' : '#721c24'"
+                    style="padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">
+                    {{ rezultat.programBezbedan ? 'SIGURAN ZA PRIMENU ✔' : 'DETEKTOVAN RIZIK ⚠️' }}
+                </span>
+            </li>
+            <li>
+                Pravilo 55 (Trenutni parametri plana dovoljni):
+                <span [style.background]="rezultat.vremeDoCiljaDovoljno ? '#d4edda' : '#f8d7da'"
+                    [style.color]="rezultat.vremeDoCiljaDovoljno ? '#155724' : '#721c24'"
+                    style="padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">
+                    {{ rezultat.vremeDoCiljaDovoljno ? 'DOVOLJNI ZA PROGRES ✔' : 'NEDOVOLJNI (SLAB TEMPO) ❌' }}
+                </span>
+            </li>
+            <li>
+                Procenjeno vreme do ispunjenja cilja unazad:
+                <strong style="font-size: 16px; color: #2c3e50;">{{ rezultat.procenjenoNedeljaDoCilja }}
+                    nedelja</strong>
+            </li>
+        </ul>
+
+        @if (rezultat.kontraindikacije.length > 0) {
+        <div class="savet-info" style="color: #c0392b; background: #fdf2f2; border: 1px solid #f5c6cb;">
+            <h5>⚠️ Sakupljene kontraindikacije / Upozorenja:</h5>
+            <ul style="margin-top: 5px; padding-left: 20px;">
+                @for (k of rezultat.kontraindikacije; track $index) {
+                <li>{{ k }}</li>
+                }
+            </ul>
+        </div>
+        } @else {
+        <div class="savet-info" style="color: #27ae60; background: #f4fbf7;">
+            <p>💡 <strong>Status:</strong> Drools rezonovanjem unazad nije pronašao nijednu zdravstvenu kontraindikaciju
+                niti devijaciju u tempu napretka.</p>
+        </div>
+        }
+        } @else {
+        <p class="prazno-poruka">Podesite parametre plana sa leve strane i pokrenite rezonovanje unazad radi dokazivanja
+            ciljeva.</p>
+        }
+    </div>
+</div>

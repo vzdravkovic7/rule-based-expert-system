@@ -93,3 +93,25 @@ export interface CEPSimulacijaIzlazDTO {
     ciljnaZonaGornja: number;
     aktiviraniAlarmi: CEPAlarmDTO[];
 }
+
+export interface BackwardZahtevDTO {
+    godine: number;
+    bmi: number;
+    pritisakKategorija: 'NORMALAN' | 'HIPERTENZIJA_1' | 'HIPERTENZIJA_2';
+    tipCilja: 'GUBITAK_MASTI' | 'MISICNA_MASA';
+    ciljniProcenatMasti: number;
+    kalorijskiDeficit: number;
+    tipTreninga: 'KARDIO' | 'SNAGA' | 'KOMBINOVANO';
+    nivoAktivnosti: 'NIZAK' | 'SREDNJI' | 'VISOK';
+    dnevniProtein: number;
+    promenaMasePoslednjihNedelja: number;
+}
+
+export interface BackwardOdgovorDTO {
+    telesniSastavIspunjen: boolean;
+    nutritivniPredusloviIspunjen: boolean;
+    programBezbedan: boolean;
+    vremeDoCiljaDovoljno: boolean;
+    procenjenoNedeljaDoCilja: number;
+    kontraindikacije: string[];
+}
