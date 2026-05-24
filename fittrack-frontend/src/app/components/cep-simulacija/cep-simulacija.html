@@ -1,0 +1,131 @@
+<div class="cep-kontejner">
+    <div class="unos-panela">
+        <h3>Strimovanje podataka o pulsu (Modul 5 - CEP)</h3>
+
+        <div class="kontekst-forma">
+            <div class="forma-red">
+                <div class="forma-grupa">
+                    <label>Godine:</label>
+                    <input type="number" [(ngModel)]="godine" class="kontrola">
+                </div>
+                <div class="forma-grupa">
+                    <label>Puls u mirovanju:</label>
+                    <input type="number" [(ngModel)]="pulsUMirovanju" class="kontrola">
+                </div>
+            </div>
+            <div class="forma-red">
+                <div class="forma-grupa">
+                    <label>Kategorija pritiska:</label>
+                    <select [(ngModel)]="pritisakKategorija" class="kontrola">
+                        <option value="NORMALAN">Normalan pritisak</option>
+                        <option value="PRE_HIPERTENZIJA">Pre-hipertenzija</option>
+                        <option value="HIPERTENZIJA_1">Hipertenzija I stepena</option>
+                    </select>
+                </div>
+                <div class="forma-grupa">
+                    <label>Intenzitet treninga:</label>
+                    <select [(ngModel)]="intenzitetTreninga" class="kontrola">
+                        <option value="NIZAK">Nizak (30-40%)</option>
+                        <option value="UMEREN">Umeren (40-60%)</option>
+                        <option value="VISOK">Visok (60-90%)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="forma-grupa cekbox-grupa">
+                <input type="checkbox" id="aktivnaSesija" [(ngModel)]="aktivnaSesija">
+                <label for="aktivnaSesija"><strong>Trening sesija je aktivna</strong> (za pravilo 50)</label>
+            </div>
+        </div>
+
+        <div class="scenariji-sekcija">
+            <h4>⚡ Brzi scenariji za prezentaciju pravila:</h4>
+            <div class="scenariji-dugmad">
+                <button (click)="ucitajScenario('TAHIKARDIJA')" class="dugme-scenario">Pravilo 47: Tahikardija</button>
+                <button (click)="ucitajScenario('VAN_ZONE')" class="dugme-scenario">Pravilo 48: Van Zone</button>
+                <button (click)="ucitajScenario('KRITICNO')" class="dugme-scenario">Pravilo 49: Eskalacija</button>
+                <button (click)="ucitajScenario('BRADIKARDIJA')" class="dugme-scenario">Pravilo 50:
+                    Bradikardija</button>
+                <button (click)="ucitajScenario('OPTIMALNO')" class="dugme-scenario">Pravilo 51: Optimalno</button>
+            </div>
+        </div>
+
+        <div class="mini-forma">
+            <div class="forma-grupa">
+                <label>Puls (BPM):</label>
+                <input type="number" [(ngModel)]="trenutniBpm" class="kontrola">
+            </div>
+            <div class="forma-grupa">
+                <label>Vreme (Sekundi od starta):</label>
+                <input type="number" [(ngModel)]="trenutneSekunde" class="kontrola">
+            </div>
+            <button (click)="dodajMerenje()" class="dugme-dodaj">➕ Ubaci u strim</button>
+        </div>
+
+        <h4>Strim puls događaja koji se šalje Drools Fusion-u:</h4>
+        <table class="tabela-strima">
+            <thead>
+                <tr>
+                    <th>Redosled</th>
+                    <th>Simulirano vreme</th>
+                    <th>Srčani ritam (BPM)</th>
+                    <th>Akcija</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (ev of privremeniDogadjaji; track $index) {
+                <tr>
+                    <td>#{{ $index + 1 }}</td>
+                    <td>+{{ ev.sekundiOdPocetka }} sekundi</td>
+                    <td><span class="puls-oznaka">{{ ev.bpm }} BPM</span></td>
+                    <td><button (click)="ukloniMerenje($index)" class="dugme-obrisi">Ukloni</button></td>
+                </tr>
+                } @empty {
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #999;">Strim je prazan. Izaberite scenario ili
+                        unesite merenja.</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+
+        <button (click)="posaljiUStreamObradu()" [disabled]="privremeniDogadjaji.length === 0" class="dugme-evaluiraj">
+            ⚡ Pokreni Drools Fusion CEP Stream Analizu
+        </button>
+    </div>
+
+    <div class="prikaz-panela">
+        <h3>CEP Rezultati & Alarmi u Realnom Vremenu</h3>
+
+        @if (ucitavanje) {
+        <p>Drools Fusion procesira vremenske prozore (Sliding Windows)...</p>
+        } @else if (rezultat) {
+        <div class="obavestenje-uspeh">
+            <h4>✅ Pravilo 46: Izračunate Karvonen Zone</h4>
+            <p>Maksimalni puls: <strong>{{ rezultat.izracunatMaxPuls }} BPM</strong></p>
+            <p>Ciljna zona za intenzitet [{{ intenzitetTreninga }}]:
+                <span class="zona-raspon">{{ rezultat.ciljnaZonaDonja }} - {{ rezultat.ciljnaZonaGornja }} BPM</span>
+            </p>
+        </div>
+
+        <h4>Detektovani vremenski obrasci (Alarmi):</h4>
+        <div class="alarmi-lista">
+            @for (alarm of rezultat.aktiviraniAlarmi; track $index) {
+            <div class="alarm-kartica" [className]="'alarm-kartica ' + alarm.nivo.toLowerCase()">
+                <div class="alarm-naslov">
+                    <span class="alarm-znacka">{{ alarm.nivo }}</span>
+                    <strong>{{ alarm.nazivPravila }}</strong>
+                </div>
+                <p class="alarm-poruka">{{ alarm.poruka }}</p>
+            </div>
+            } @empty {
+            <div class="obavestenje-mirno">
+                <p>🟢 Nema detektovanih anomalija. Strim je stabilan i bezbedan.</p>
+            </div>
+            }
+        </div>
+        } @else {
+        <p class="prazno-poruka">Sastavite strim merenja ili učitajte neki od predefinisanih scenarija za proveru
+            kompleksnih događaja.</p>
+        }
+    </div>
+</div>

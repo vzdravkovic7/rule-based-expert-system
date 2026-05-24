@@ -1,0 +1,150 @@
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+import com.ftn.sbnz.model.TreningIntenzitet;
+import com.ftn.sbnz.model.PulsEvent;
+import com.ftn.sbnz.model.AktivnaSesija;
+import com.ftn.sbnz.model.CEPAlarm;
+import java.util.Date;
+
+declare PulsEvent
+    @role(event)
+    @timestamp(timestamp)
+    @expires(15m)
+end
+
+declare CEPAlarm
+    @role(event)
+    @expires(10m)
+end
+
+rule "IzracunajCiljnuZonuPulsa - Nizak Intenzitet (30-40%)"
+    salience 200
+    no-loop true
+    when
+        $k: Korisnik($id: id, maxPuls == 0, pulsUMirovanju > 0)
+        TreningIntenzitet(korisnikId == $id, intenzitet == "NIZAK")
+    then
+        int izracunatMax = (int) Math.round(207 - (0.7 * $k.getGodine()));
+        int hrr = izracunatMax - $k.getPulsUMirovanju();
+        
+        int zonaDonja = (int) Math.round((0.30 * hrr) + $k.getPulsUMirovanju());
+        int zonaGornja = (int) Math.round((0.40 * hrr) + $k.getPulsUMirovanju());
+        
+        modify($k) {
+            setMaxPuls(izracunatMax),
+            setCiljnaZonaDonja(zonaDonja),
+            setCiljnaZonaGornja(zonaGornja)
+        }
+end
+
+rule "IzracunajCiljnuZonuPulsa - Umeren Intenzitet (40-60%)"
+    salience 200
+    no-loop true
+    when
+        $k: Korisnik($id: id, maxPuls == 0, pulsUMirovanju > 0)
+        TreningIntenzitet(korisnikId == $id, intenzitet == "UMEREN")
+    then
+        int izracunatMax = (int) Math.round(207 - (0.7 * $k.getGodine()));
+        int hrr = izracunatMax - $k.getPulsUMirovanju();
+        
+        int zonaDonja = (int) Math.round((0.40 * hrr) + $k.getPulsUMirovanju());
+        int zonaGornja = (int) Math.round((0.60 * hrr) + $k.getPulsUMirovanju());
+        
+        modify($k) {
+            setMaxPuls(izracunatMax),
+            setCiljnaZonaDonja(zonaDonja),
+            setCiljnaZonaGornja(zonaGornja)
+        }
+end
+
+rule "IzracunajCiljnuZonuPulsa - Visok Intenzitet (60-90%)"
+    salience 200
+    no-loop true
+    when
+        $k: Korisnik($id: id, maxPuls == 0, pulsUMirovanju > 0)
+        TreningIntenzitet(korisnikId == $id, intenzitet == "VISOK")
+    then
+        int izracunatMax = (int) Math.round(207 - (0.7 * $k.getGodine()));
+        int hrr = izracunatMax - $k.getPulsUMirovanju();
+        
+        int zonaDonja = (int) Math.round((0.60 * hrr) + $k.getPulsUMirovanju());
+        int zonaGornja = (int) Math.round((0.90 * hrr) + $k.getPulsUMirovanju());
+        
+        modify($k) {
+            setMaxPuls(izracunatMax),
+            setCiljnaZonaDonja(zonaDonja),
+            setCiljnaZonaGornja(zonaGornja)
+        }
+end
+
+rule "CEP_TahikardijaAlarm"
+    no-loop true
+    when
+        $k: Korisnik($id: id, maxPuls > 0)
+        Number(doubleValue > ($k.maxPuls * 0.85)) from accumulate(
+            PulsEvent(korisnikId == $id, $b: bpm) over window:time(2m),
+            average($b)
+        )
+        not (CEPAlarm(korisnikId == $id, nazivPravila == "CEP_TahikardijaAlarm"))
+    then
+        insert(new CEPAlarm($id, "CEP_TahikardijaAlarm", "VISOKI", "Kritična situacija! Prosečan puls u zadnja 2 minuta je prešao 85% maksimalnog pulsa. Prestanite sa vežbanjem!"));
+end
+
+rule "CEP_PulsVanZone_Upozorenje"
+    no-loop true
+    when
+        $k: Korisnik($id: id, ciljnaZonaGornja > 0, pritisakKategorija == "NORMALAN" || pritisakKategorija == null)
+        
+        $e1: PulsEvent(korisnikId == $id, bpm > $k.ciljnaZonaGornja) over window:time(5m)
+        Number(intValue == 9) from accumulate(
+            $e2: PulsEvent(korisnikId == $id, bpm > $k.ciljnaZonaGornja, redniBroj > $e1.redniBroj, redniBroj <= $e1.redniBroj + 9) over window:time(5m),
+            count($e2)
+        )
+        
+        not (CEPAlarm(korisnikId == $id, nazivPravila == "CEP_PulsVanZone_Upozorenje"))
+    then
+        insert(new CEPAlarm($id, "CEP_PulsVanZone_Upozorenje", "SREDNJI", "Puls je iznad gornje granice ciljne zone vezano 10 merenja. Smanjite tempo ili napravite pauzu."));
+end
+
+rule "CEP_PulsVanZone_Kritično"
+    no-loop true
+    when
+        $k: Korisnik($id: id, ciljnaZonaGornja > 0, pritisakKategorija in ("PRE_HIPERTENZIJA", "HIPERTENZIJA_1"))
+        
+        not (PulsEvent(korisnikId == $id, bpm <= $k.ciljnaZonaGornja) over window:time(10m))
+        exists (PulsEvent(korisnikId == $id) over window:time(10m))
+    then
+        insert(new CEPAlarm($id, "CEP_PulsVanZone_Kritično", "KRITICNI", "ESKALACIJA: Korisnik sa rizičnim pritiskom ima puls van zone preko 10 minuta! Odmah prekinite trening!"));
+end
+
+rule "CEP_BradikardijaTokomVezbe"
+    no-loop true
+    when
+        $k: Korisnik($id: id)
+        AktivnaSesija(korisnikId == $id, aktivna == true)
+        
+        Number(doubleValue < 50.0) from accumulate(
+            PulsEvent(korisnikId == $id, $b: bpm) over window:time(3m),
+            average($b)
+        )
+        not (CEPAlarm(korisnikId == $id, nazivPravila == "CEP_BradikardijaTokomVezbe"))
+    then
+        insert(new CEPAlarm($id, "CEP_BradikardijaTokomVezbe", "SREDNJI", "Upozorenje: Zabeležen nizak puls (bradikardija) tokom aktivnog treninga. Proverite zdravstveno stanje."));
+end
+
+rule "CEP_OptimalnaZonaPotvrda"
+    no-loop true
+    when
+        $k: Korisnik($id: id, ciljnaZonaDonja > 0, ciljnaZonaGornja > 0)
+        
+        $e1: PulsEvent(korisnikId == $id, bpm >= $k.ciljnaZonaDonja && bpm <= $k.ciljnaZonaGornja) over window:time(10m)
+        Number(intValue == 9) from accumulate(
+            $e2: PulsEvent(korisnikId == $id, bpm >= $k.ciljnaZonaDonja && bpm <= $k.ciljnaZonaGornja, redniBroj > $e1.redniBroj, redniBroj <= $e1.redniBroj + 9) over window:time(10m),
+            count($e2)
+        )
+        
+        not (CEPAlarm(korisnikId == $id, nazivPravila == "CEP_OptimalnaZonaPotvrda"))
+    then
+        insert(new CEPAlarm($id, "CEP_OptimalnaZonaPotvrda", "POTVRDA", "Odlično! Puls u optimalnoj zoni."));
+end

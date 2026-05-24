@@ -42,25 +42,37 @@ rule "Odredi Tip Progresije - Povecaj Tezinu"
         insert(new ProgresijaNalog($id, "POVECAJ_TEZINU"));
 end
 
-rule "Primeni Progresiju - Izvrsi"
+rule "Primeni Progresiju - Povecaj Serije"
     salience 10
     when
-        $pn: ProgresijaNalog($id: korisnikId, $tip: tip)
+        $pn: ProgresijaNalog($id: korisnikId, tip == "POVECAJ_SERIJE")
         $plan: TreningPlan(korisnikId == $id)
         $nd: NapredakDetektor(korisnikId == $id, tip == "SPREMAN_ZA_PROGRESIJU")
         $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
     then
-        if ($tip.equals("POVECAJ_SERIJE")) {
-            modify($plan) { 
-                setSerijeSnaga($plan.getSerijeSnaga() + 1),
-                setPorukaProgresa("Progresija: Uspešno povećan broj serija snage!")
-            }
-        } else {
-            modify($plan) { 
-                setPorukaProgresa("PREDLOG: Povećajte radne težine za 5% na sledećem treningu (dostignut maksimalan obim serija).")
-            }
-            System.out.println("[Progresija] Predlog: Povecati tezinu za 5% korisniku sa ID: " + $id);
+        modify($plan) { 
+            setSerijeSnaga($plan.getSerijeSnaga() + 1),
+            setPorukaProgresa("Progresija: Uspešno povećan broj serija snage!")
         }
+        for(Object obj : $neobradjeniLogovi) {
+            modify((TreningLog)obj) { setObradjen(true); }
+        }
+        retract($pn); 
+        retract($nd);
+end
+
+rule "Primeni Progresiju - Povecaj Tezinu"
+    salience 10
+    when
+        $pn: ProgresijaNalog($id: korisnikId, tip == "POVECAJ_TEZINU")
+        $plan: TreningPlan(korisnikId == $id)
+        $nd: NapredakDetektor(korisnikId == $id, tip == "SPREMAN_ZA_PROGRESIJU")
+        $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
+    then
+        modify($plan) { 
+            setPorukaProgresa("PREDLOG: Povećajte radne težine za 5% na sledećem treningu (dostignut maksimalan obim serija).")
+        }
+        System.out.println("[Progresija] Predlog: Povecati tezinu za 5% korisniku sa ID: " + $id);
         for(Object obj : $neobradjeniLogovi) {
             modify((TreningLog)obj) { setObradjen(true); }
         }
@@ -100,8 +112,9 @@ rule "Primeni Deload"
         $plan: TreningPlan(korisnikId == $id)
         $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
     then
-        int noveSerije = (int) Math.floor($plan.getSerijeSnaga() * 0.6);
-        if (noveSerije < 1) noveSerije = 1;
+        int proracunateSerije = (int) Math.floor($plan.getSerijeSnaga() * 0.6);
+        int noveSerije = Math.max(1, proracunateSerije);
+        
         modify($plan) { 
             setSerijeSnaga(noveSerije),
             setPorukaProgresa("Deload: Smanjen obim treninga usled preopterecenja.")

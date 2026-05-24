@@ -5,13 +5,21 @@
 
     <nav class="tab-navigation">
         <button [class.active]="aktivniTab() === 'profil'" (click)="promeniTab('profil')">
-            📋 Profil i Trening Plan (Modul 1 & 2)
+            📋 Profil i Trening Plan + Template (Modul 1, 2 & 7)
         </button>
         <button [class.active]="aktivniTab() === 'nutricija'" (click)="promeniTab('nutricija')">
             🥗 Nutritivni Plan (Modul 4)
         </button>
         <button [class.active]="aktivniTab() === 'logovi'" (click)="promeniTab('logovi')">
             💪 Evaluacija Progresa (Modul 3)
+        </button>
+        <button [class.active]="aktivniTab() === 'cep'" (click)="promeniTab('cep')"
+            style="background: #fef08a; color: #854d0e; font-weight: bold;">
+            ❤️ CEP Monitor Pulsa (Modul 5)
+        </button>
+        <button [class.active]="aktivniTab() === 'backward'" (click)="promeniTab('backward')"
+            style="background: #e1bee7; color: #4a148c; font-weight: bold;">
+            🔍 Backward Chaining (Modul 6)
         </button>
     </nav>
 
@@ -24,6 +32,12 @@
         }
         @if (aktivniTab() === 'logovi') {
         <app-trening-log></app-trening-log>
+        }
+        @if (aktivniTab() === 'cep') {
+        <app-cep-simulacija></app-cep-simulacija>
+        }
+        @if (aktivniTab() === 'backward') {
+        <app-backward-demonstracija></app-backward-demonstracija>
         }
     </main>
 </div>

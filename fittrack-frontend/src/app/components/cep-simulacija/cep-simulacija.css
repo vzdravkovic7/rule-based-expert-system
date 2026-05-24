@@ -1,0 +1,54 @@
+.cep-kontejner { display: flex; gap: 20px; margin-top: 15px; }
+.unos-panela { flex: 1.3; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+.prikaz-panela { flex: 1; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
+
+.kontekst-forma { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+.forma-red { display: flex; gap: 15px; margin-bottom: 10px; }
+.forma-grupa { flex: 1; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.forma-grupa label { font-size: 13px; font-weight: bold; color: #4a5568; }
+.kontrola { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
+.cekbox-grupa { flex-direction: row; align-items: center; gap: 10px; margin-top: 5px; }
+
+.scenariji-sekcija { margin-bottom: 25px; }
+.scenariji-dugmad { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+.dugme-scenario { padding: 6px 12px; background: #edf2f7; color: #2d3748; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; }
+.dugme-scenario:hover { background: #e2e8f0; border-color: #cbd5e1; }
+
+.mini-forma { display: flex; gap: 10px; align-items: flex-end; background: #f0fdf4; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed #bbf7d0; }
+.dugme-dodaj { padding: 8px 12px; background: #16a34a; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; height: 35px; }
+
+.tabela-strima { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
+.tabela-strima th, .tabela-strima td { padding: 8px; border: 1px solid #e2e8f0; text-align: left; }
+.tabela-strima th { background: #f1f5f9; }
+.puls-oznaka { background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
+.dugme-obrisi { background: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+
+.dugme-evaluiraj { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px; }
+.dugme-evaluiraj:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+.obavestenje-uspeh { background: #f0fdf4; color: #166534; padding: 15px; border-radius: 6px; border-left: 5px solid #22c55e; margin-bottom: 20px; }
+.zona-raspon { display: inline-block; background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
+
+.alarmi-lista { display: flex; flex-direction: column; gap: 12px; }
+.alarm-kartica { padding: 15px; border-radius: 6px; border-left: 5px solid #ccc; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.alarm-naslov { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+.alarm-znacka { padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 4px; color: white; }
+.alarm-poruka { margin: 0; font-size: 14px; color: #334155; }
+
+.alarm-kartica.visoki { border-left-color: #ea580c; background: #fff7ed; }
+.alarm-kartica.visoki .alarm-znacka { background: #ea580c; }
+.alarm-kartica.srednji { border-left-color: #eab308; background: #fefce8; }
+.alarm-kartica.srednji .alarm-znacka { background: #eab308; color: #000; }
+.alarm-kartica.kriticni { border-left-color: #e11d48; background: #fff1f2; animation: blink 2s infinite; }
+.alarm-kartica.kriticni .alarm-znacka { background: #e11d48; }
+.alarm-kartica.potvrda { border-left-color: #2563eb; background: #eff6ff; }
+.alarm-kartica.potvrda .alarm-znacka { background: #2563eb; }
+
+.obavestenje-mirno { padding: 15px; background: #f0fdf4; border-radius: 6px; text-align: center; color: #15803d; border: 1px solid #bbf7d0; }
+.prazno-poruka { text-align: center; color: #64748b; margin-top: 40px; }
+
+@keyframes blink {
+    0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+}

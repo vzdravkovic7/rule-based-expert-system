@@ -1,0 +1,118 @@
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+import com.ftn.sbnz.model.CiljKorisnika;
+import com.ftn.sbnz.model.TrenutniPlan;
+import com.ftn.sbnz.model.RezultatProvereCilja;
+
+import java.util.List;
+
+query ZahtevZadovoljen(Long kId, String koncept, String zahtev)
+    ( 
+        String(this == "TELESNI_SASTAV") from koncept and String(this == "MIN_DEFICIT") from zahtev and
+        TrenutniPlan(korisnikId == kId, kalorijskiDeficit >= 500)
+    )
+    or
+    (
+        String(this == "TELESNI_SASTAV") from koncept and String(this == "TIP_TRENINGA") from zahtev and
+        TrenutniPlan(korisnikId == kId, tipTreninga == "KARDIO" || tipTreninga == "KOMBINOVANO")
+    )
+    or
+    (
+        String(this == "TELESNI_SASTAV") from koncept and String(this == "NIVO_AKTIVNOSTI") from zahtev and
+        TrenutniPlan(korisnikId == kId, nivoAktivnosti == "SREDNJI" || nivoAktivnosti == "VISOK")
+    )
+    or
+    (
+        String(this == "NUTRICIJA") from koncept and String(this == "MIN_PROTEIN") from zahtev and
+        TrenutniPlan(korisnikId == kId, dnevniProtein >= 140.0)
+    )
+    or
+    (
+        String(this == "NUTRICIJA") from koncept and String(this == "TRENING_USKLADJEN") from zahtev and
+        TrenutniPlan(korisnikId == kId, tipTreninga != "SNAGA")
+    )
+    or
+    (
+        String(this == "BEZBEDNOST") from koncept and String(this == "KONTRAINDIKACIJA_PRITISAK") from zahtev and
+        Korisnik(id == kId, pritisakKategorija == "HIPERTENZIJA_1" || pritisakKategorija == "HIPERTENZIJA_2")
+    )
+    or
+    (
+        String(this == "BEZBEDNOST") from koncept and String(this == "KONTRAINDIKACIJA_STAROST_BMI") from zahtev and
+        Korisnik(id == kId, godine > 50 && bmi > 30.0)
+    )
+    or
+    (
+        String(this == "ODRZIVOST") from koncept and String(this == "PRESPOR_TEMPO") from zahtev and
+        TrenutniPlan(korisnikId == kId, promenaMasePoslednjihNedelja > -0.3)
+    )
+end
+
+query ValidacijaPlanaUnazad(Long kId, String tipValidacije)
+    (
+        String(this == "PROVERA_SASTAVA") from tipValidacije and
+        ZahtevZadovoljen(kId, "TELESNI_SASTAV", "MIN_DEFICIT";) and
+        ZahtevZadovoljen(kId, "TELESNI_SASTAV", "TIP_TRENINGA";) and
+        ZahtevZadovoljen(kId, "TELESNI_SASTAV", "NIVO_AKTIVNOSTI";)
+    )
+    or
+    (
+        String(this == "PROVERA_NUTRICIJE") from tipValidacije and
+        ZahtevZadovoljen(kId, "NUTRICIJA", "MIN_PROTEIN";) and
+        ZahtevZadovoljen(kId, "NUTRICIJA", "TRENING_USKLADJEN";)
+    )
+end
+
+query Query_DostiziCilj_TelesniSastav(Long cId, RezultatProvereCilja res)
+    CiljKorisnika(korisnikId == cId, tipCilja == "GUBITAK_MASTI", ciljniProcenatMasti < 15.0) and
+    ValidacijaPlanaUnazad(cId, "PROVERA_SASTAVA";)
+end
+
+query Query_NutritivePreduslovi(Long cId, RezultatProvereCilja res)
+    CiljKorisnika(korisnikId == cId, tipCilja == "GUBITAK_MASTI") and
+    ValidacijaPlanaUnazad(cId, "PROVERA_NUTRICIJE";)
+end
+
+query Query_BezbednostPrograma(Long cId, RezultatProvereCilja res)
+    ZahtevZadovoljen(cId, "BEZBEDNOST", "KONTRAINDIKACIJA_PRITISAK";) or
+    ZahtevZadovoljen(cId, "BEZBEDNOST", "KONTRAINDIKACIJA_STAROST_BMI";)
+end
+
+query Query_VremeDoIspunjenjacilja(Long cId, RezultatProvereCilja res)
+    CiljKorisnika(korisnikId == cId, tipCilja == "GUBITAK_MASTI") and
+    ZahtevZadovoljen(cId, "ODRZIVOST", "PRESPOR_TEMPO";)
+end
+
+rule "Obrada_Backward_Bezbednosti_Pritisak"
+salience 10
+when
+    $res : RezultatProvereCilja($kId : korisnikId)
+    Query_BezbednostPrograma($kId, $res;)
+    Korisnik(id == $kId, pritisakKategorija in ("HIPERTENZIJA_1", "HIPERTENZIJA_2"))
+then
+    $res.setPlanJeDovoljan(false);
+    $res.dodajKontraindikaciju("KONTRAINDIKACIJA: Korisnik ima registrovan povišen krvni pritisak. Potrebna medicinska saglasnost!");
+end
+
+rule "Obrada_Backward_Bezbednosti_StarostBMI"
+salience 10
+when
+    $res : RezultatProvereCilja($kId : korisnikId)
+    Query_BezbednostPrograma($kId, $res;)
+    Korisnik(id == $kId, godine > 50, bmi > 30.0)
+then
+    $res.setPlanJeDovoljan(false);
+    $res.dodajKontraindikaciju("KONTRAINDIKACIJA: Visok rizik usled starosne dobi (>50 god) i gojaznosti (BMI > 30). Redukovati intenzitet!");
+end
+
+rule "Obrada_Backward_Odrzivosti_NedovoljanTempo"
+salience 5
+when
+    $res : RezultatProvereCilja($kId : korisnikId)
+    Query_VremeDoIspunjenjacilja($kId, $res;)
+then
+    $res.setPlanJeDovoljan(false);
+    $res.setProcenjenoNedelja(24);
+    $res.dodajKontraindikaciju("UPOZORENJE: Trenutni tempo promene mase je prespor za dostizanje cilja u optimalnom roku.");
+end
