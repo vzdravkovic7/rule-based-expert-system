@@ -5,11 +5,31 @@ import com.ftn.sbnz.model.TreningIntenzitet;
 import com.ftn.sbnz.model.TreningPlan;
 import com.ftn.sbnz.model.Vezba;
 
+rule "BezbednosnaBlokada_Hipertenzija2"
+    salience 100
+    no-loop true
+    when
+        $k: Korisnik($id: id, pritisakKategorija == "HIPERTENZIJA_2")
+        $plan: TreningPlan(korisnikId == $id)
+    then
+        modify($plan) {
+            setSnagaDani(0),
+            setKardioDani(0),
+            setSerijeSnaga(0),
+            setOdmorSekundi(0),
+            setKardioMinuta(0),
+            setPonavljanjaSnaga("0"),
+            setSelektovaneVezbe(new java.util.ArrayList()),
+            setPorukaProgresa("CRITICAL WARNING: Trening je blokiran! Zbog dijagnostikovane Hipertenzije Tipa 2, neophodno je dostaviti zvaničnu medicinsku saglasnost lekara pre kreiranja bilo kakvog plana.")
+        }
+        System.out.println("[BEZBEDNOST] Aktiviran crveni alarm! Blokiran plan za korisnika ID: " + $id);
+end
+
 rule "OdrediIntenzitet_Nizak"
     salience 50
     no-loop true
     when
-        $k: Korisnik(nivoAktivnosti == "NEAKTIVAN")
+        $k: Korisnik(nivoAktivnosti == "NEAKTIVAN" || pritisakKategorija == "HIPERTENZIJA_2")
         not TreningIntenzitet(korisnikId == $k.id)
     then
         insert(new TreningIntenzitet($k.getId(), "NIZAK"));
@@ -99,50 +119,11 @@ rule "PrilagodiPlan_SeniorVisokRizik"
         System.out.println("[Modul 2] Plan je prilagođen za seniora sa visokim rizikom: " + $k.getIme());
 end
 
-rule "OdredjivanjeSerijaRepova_Nizak"
-    salience 40
-    when
-        $ti: TreningIntenzitet($id: korisnikId, intenzitet == "NIZAK")
-        $plan: TreningPlan(korisnikId == $id, serijeSnaga == 0)
-    then
-        modify($plan) {
-            setSerijeSnaga(1),
-            setPonavljanjaSnaga("10-15"),
-            setOdmorSekundi(90)
-        }
-end
-
-rule "OdredjivanjeSerijaRepova_Umeren"
-    salience 40
-    when
-        $ti: TreningIntenzitet($id: korisnikId, intenzitet == "UMEREN")
-        $plan: TreningPlan(korisnikId == $id, serijeSnaga == 0)
-    then
-        modify($plan) {
-            setSerijeSnaga(2),
-            setPonavljanjaSnaga("10-15"),
-            setOdmorSekundi(75)
-        }
-end
-
-rule "OdredjivanjeSerijaRepova_Visok"
-    salience 40
-    when
-        $ti: TreningIntenzitet($id: korisnikId, intenzitet == "VISOK")
-        $plan: TreningPlan(korisnikId == $id, serijeSnaga == 0)
-    then
-        modify($plan) {
-            setSerijeSnaga(3),
-            setPonavljanjaSnaga("8-12"),
-            setOdmorSekundi(60)
-        }
-end
-
 rule "SelekcijaVezbi_BezSnage"
     salience 35
     when
         $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
-        $k: Korisnik(id == $id, pritisakKategorija == "HIPERTENZIJA_2" || bmiKategorija == "GOJAZNOST")
+        $k: Korisnik(id == $id, bmiKategorija == "GOJAZNOST", pritisakKategorija != "HIPERTENZIJA_2")
         $v: Vezba(javaVrsta == "KARDIO", kontraindikovanaZaPritisak == false, $naziv: naziv)
         not String(this == $naziv) from $selektovane
     then
@@ -154,7 +135,7 @@ rule "SelekcijaVezbi_ViseKardio"
     when
         $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
         $ti: TreningIntenzitet(korisnikId == $id, $intenzitet: intenzitet)
-        $k: Korisnik(id == $id, pritisakKategorija == "HIPERTENZIJA_1" || bmiKategorija == "PREKOMERNA_TEZINA")
+        $k: Korisnik(id == $id, pritisakKategorija in ("PRE_HIPERTENZIJA", "HIPERTENZIJA_1") || bmiKategorija == "PREKOMERNA_TEZINA")
         $v: Vezba(intenzitet == $intenzitet, kontraindikovanaZaPritisak == false, $naziv: naziv)
         not String(this == $naziv) from $selektovane
     then
@@ -171,33 +152,6 @@ rule "SelekcijaVezbi_ViseSnage"
         not String(this == $naziv) from $selektovane
     then
         modify($plan) { dodajVezbu($v.getNaziv()); }
-end
-
-rule "KardioMinutaza_Nizak"
-    salience 30
-    when
-        $ti: TreningIntenzitet($id: korisnikId, intenzitet == "NIZAK")
-        $plan: TreningPlan(korisnikId == $id, kardioMinuta == 0)
-    then
-        modify($plan) { setKardioMinuta(10); }
-end
-
-rule "KardioMinutaza_Umeren"
-    salience 30
-    when
-        $ti: TreningIntenzitet($id: korisnikId, intenzitet == "UMEREN")
-        $plan: TreningPlan(korisnikId == $id, kardioMinuta == 0)
-    then
-        modify($plan) { setKardioMinuta(20); }
-end
-
-rule "KardioMinutaza_Visok"
-    salience 30
-    when
-        $ti: TreningIntenzitet($id: korisnikId, intenzitet == "VISOK")
-        $plan: TreningPlan(korisnikId == $id, kardioMinuta == 0)
-    then
-        modify($plan) { setKardioMinuta(30); }
 end
 
 rule "SelekcijaVezbi_Standard"

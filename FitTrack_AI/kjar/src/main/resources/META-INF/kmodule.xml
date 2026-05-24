@@ -2,6 +2,6 @@
 <kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <kbase name="fittrack-rules" packages="rules" eventProcessingMode="stream">
-        <ksession name="fittrack-session" type="stateful" />
+        <ksession name="fittrack-session" type="stateful" clockType="pseudo" />
     </kbase>
 </kmodule>
