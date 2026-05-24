@@ -1,0 +1,141 @@
+.fittrack-container {
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+  color: #333;
+}
+
+.fittrack-title {
+  color: #222;
+  margin-bottom: 5px;
+}
+
+.fittrack-layout {
+  display: flex;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .fittrack-layout {
+    flex-direction: column;
+  }
+}
+
+.form-section {
+  flex: 1;
+  background: #fdfdfd;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #eaeaea;
+}
+
+.result-section {
+  flex: 1;
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #555;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.row-inputs {
+  display: flex;
+  gap: 12px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 10px;
+  transition: background 0.2s;
+}
+
+.submit-btn:hover {
+  background: #0056b3;
+}
+
+.plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.plan-table tr {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.plan-table td {
+  padding: 10px 0;
+  font-size: 15px;
+}
+
+.plan-table td.val {
+  text-align: right;
+  font-weight: 600;
+  color: #007bff;
+}
+
+.exercise-list {
+  padding-left: 20px;
+  margin: 10px 0 0 0;
+}
+
+.exercise-item {
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #444;
+}
+
+.status-msg {
+  color: #777;
+  font-style: italic;
+  text-align: center;
+  margin-top: 30px;
+}
+
+.error-msg {
+  color: #dc3545;
+  background: #f8d7da;
+  padding: 12px;
+  border-radius: 5px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  border: 1px solid #f5c6cb;
+}

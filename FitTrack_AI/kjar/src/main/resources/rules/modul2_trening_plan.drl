@@ -1,0 +1,167 @@
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+import com.ftn.sbnz.model.TreningIntenzitet;
+import com.ftn.sbnz.model.TreningPlan;
+import com.ftn.sbnz.model.Vezba;
+
+rule "BezbednosnaBlokada_Hipertenzija2"
+    salience 100
+    no-loop true
+    when
+        $k: Korisnik($id: id, pritisakKategorija == "HIPERTENZIJA_2")
+        $plan: TreningPlan(korisnikId == $id, snagaDani > 0 || kardioDani > 0)
+    then
+        modify($plan) {
+            setSnagaDani(0),
+            setKardioDani(0),
+            setSerijeSnaga(0),
+            setOdmorSekundi(0),
+            setKardioMinuta(0),
+            setPonavljanjaSnaga("0"),
+            setSelektovaneVezbe(new java.util.ArrayList()),
+            setPorukaProgresa("CRITICAL WARNING: Trening je blokiran! Zbog dijagnostikovane Hipertenzije Tipa 2, neophodno je dostaviti zvaničnu medicinsku saglasnost lekara pre kreiranja bilo kakvog plana.")
+        }
+        System.out.println("[BEZBEDNOST] Aktiviran crveni alarm! Blokiran plan za korisnika ID: " + $id);
+end
+
+rule "OdrediIntenzitet_Nizak"
+    salience 50
+    no-loop true
+    when
+        $k: Korisnik(nivoAktivnosti == "NEAKTIVAN" || pritisakKategorija == "HIPERTENZIJA_2")
+        not TreningIntenzitet(korisnikId == $k.id)
+    then
+        insert(new TreningIntenzitet($k.getId(), "NIZAK"));
+end
+
+rule "OdrediIntenzitet_Umeren"
+    salience 50
+    no-loop true
+    when
+        $k: Korisnik(nivoAktivnosti == "MINIMALNO_AKTIVAN" || godine > 64 || 
+                    (nivoAktivnosti == "AKTIVAN" && (pritisakKategorija == "PRE_HIPERTENZIJA" || pritisakKategorija == "HIPERTENZIJA_1")))
+        not TreningIntenzitet(korisnikId == $k.id)
+    then
+        insert(new TreningIntenzitet($k.getId(), "UMEREN"));
+end
+
+rule "OdrediIntenzitet_Visok"
+    salience 50
+    no-loop true
+    when
+        $k: Korisnik(nivoAktivnosti == "AKTIVAN", pritisakKategorija == "NORMALAN", bmiKategorija != "GOJAZNOST", godine <= 64)
+        not TreningIntenzitet(korisnikId == $k.id)
+    then
+        insert(new TreningIntenzitet($k.getId(), "VISOK"));
+end
+
+rule "GenerisiPlan_GubitakMasti"
+    salience 45
+    no-loop true
+    when
+        $k: Korisnik($id: id, cilj == "GUBITAK_MASTI")
+        not TreningPlan(korisnikId == $id)
+    then
+        TreningPlan plan = new TreningPlan($id);
+        plan.setKardioDani(4);
+        plan.setSnagaDani(2);
+        insert(plan);
+end
+
+rule "GenerisiPlan_Hipertrofija"
+    salience 45
+    no-loop true
+    when
+        $k: Korisnik($id: id, cilj == "HIPERTROFIJA")
+        not TreningPlan(korisnikId == $id)
+    then
+        TreningPlan plan = new TreningPlan($id);
+        plan.setKardioDani(1);
+        plan.setSnagaDani(4);
+        insert(plan);
+end
+
+rule "DopuniPostojeciPlan_Hipertrofija"
+    salience 46
+    no-loop true
+    when
+        $k: Korisnik($id: id, cilj == "HIPERTROFIJA", pritisakKategorija != "HIPERTENZIJA_2")
+        $plan: TreningPlan(korisnikId == $id, kardioDani == 0)
+    then
+        modify($plan) { setKardioDani(1), setSnagaDani(4) }
+end
+
+rule "GenerisiPlan_OpstaKondicija"
+    salience 45
+    no-loop true
+    when
+        $k: Korisnik($id: id, cilj == "OPSTA_KONDICIJA")
+        not TreningPlan(korisnikId == $id)
+    then
+        TreningPlan plan = new TreningPlan($id);
+        plan.setKardioDani(3);
+        plan.setSnagaDani(3);
+        insert(plan);
+end
+
+rule "PrilagodiPlan_SeniorVisokRizik"
+    salience 47
+    no-loop true
+    when
+        $k: Korisnik(senior == true, pritisakKategorija == "HIPERTENZIJA_2" || bmiKategorija == "GOJAZNOST")
+        $plan: TreningPlan(korisnikId == $k.id, kardioDani > 2) 
+    then
+        modify($plan) {
+            setKardioDani(2),
+            setSnagaDani(1)
+        }
+        System.out.println("[Modul 2] Plan je prilagođen za seniora sa visokim rizikom: " + $k.getIme());
+end
+
+rule "SelekcijaVezbi_BezSnage"
+    salience 35
+    when
+        $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
+        $k: Korisnik(id == $id, bmiKategorija == "GOJAZNOST", pritisakKategorija != "HIPERTENZIJA_2")
+        $v: Vezba(javaVrsta == "KARDIO", kontraindikovanaZaPritisak == false, $naziv: naziv)
+        not String(this == $naziv) from $selektovane
+    then
+        modify($plan) { dodajVezbu($v.getNaziv()); }
+end
+
+rule "SelekcijaVezbi_ViseKardio"
+    salience 35
+    when
+        $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
+        $ti: TreningIntenzitet(korisnikId == $id, $intenzitet: intenzitet)
+        $k: Korisnik(id == $id, pritisakKategorija in ("PRE_HIPERTENZIJA", "HIPERTENZIJA_1") || bmiKategorija == "PREKOMERNA_TEZINA")
+        $v: Vezba(intenzitet == $intenzitet, kontraindikovanaZaPritisak == false, $naziv: naziv)
+        not String(this == $naziv) from $selektovane
+    then
+        modify($plan) { dodajVezbu($v.getNaziv()); }
+end
+
+rule "SelekcijaVezbi_ViseSnage"
+    salience 35
+    when
+        $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
+        $ti: TreningIntenzitet(korisnikId == $id, $intenzitet: intenzitet)
+        $k: Korisnik(id == $id, bmiKategorija == "POTHRANJENOST", pritisakKategorija == "NORMALAN")
+        $v: Vezba(intenzitet == $intenzitet, kontraindikovanaZaPritisak == false, $naziv: naziv)
+        not String(this == $naziv) from $selektovane
+    then
+        modify($plan) { dodajVezbu($v.getNaziv()); }
+end
+
+rule "SelekcijaVezbi_Standard"
+    salience 35
+    when
+        $plan: TreningPlan($id: korisnikId, $selektovane: selektovaneVezbe)
+        $ti: TreningIntenzitet(korisnikId == $id, $intenzitet: intenzitet)
+        $k: Korisnik(id == $id, pritisakKategorija == "NORMALAN", bmiKategorija == "NORMALNO")
+        $v: Vezba(intenzitet == $intenzitet, javaVrsta == "SNAGA" || javaVrsta == "KARDIO", $naziv: naziv)
+        not String(this == $naziv) from $selektovane
+    then
+        modify($plan) { dodajVezbu($v.getNaziv()); }
+end

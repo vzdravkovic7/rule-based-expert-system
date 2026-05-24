@@ -1,0 +1,74 @@
+<div class="log-kontejner">
+    <div class="unos-panela">
+        <h3>Unos Istorije Treninga (Modul 3)</h3>
+
+        <div class="mini-forma">
+            <div class="forma-grupa">
+                <label>RPE (Napor 1-10):</label>
+                <input type="number" [(ngModel)]="trenutniRpe" min="1" max="10" class="kontrola">
+            </div>
+            <div class="forma-grupa">
+                <label>Datum treninga:</label>
+                <input type="date" [(ngModel)]="trenutniDatum" class="kontrola">
+            </div>
+            <button (click)="dodajLogUListu()" class="dugme-dodaj">➕ Dodaj trening log</button>
+        </div>
+
+        <h4>Trenutno pripremljeni logovi za slanje:</h4>
+        <table class="tabela-logova">
+            <thead>
+                <tr>
+                    <th>Datum</th>
+                    <th>Subjektivni napor (RPE)</th>
+                    <th>Akcija</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (log of privremeniLogovi; track $index) {
+                <tr>
+                    <td>{{ log.datum }}</td>
+                    <td><span class="rpe-oznaka">{{ log.rpe }}</span></td>
+                    <td><button (click)="obrisiLog($index)" class="dugme-obrisi">Ukloni</button></td>
+                </tr>
+                } @empty {
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #999;">Nema dodatih treninga.</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+
+        <button (click)="posaljiUProgresiju()" [disabled]="privremeniLogovi.length === 0" class="dugme-evaluiraj">
+            🚀 Pokreni SBNZ Evaluaciju Progresa
+        </button>
+    </div>
+
+    <div class="prikaz-panela">
+        <h3>Rezultat Obrade Istorije (Modul 3)</h3>
+        @if (ucitavanje) {
+        <p>Drools analizira RPE trendove i akumulira logove...</p>
+        } @else if (osvezenPlan) {
+        <div class="obavestenje-uspeh">
+            <h4>✅ Forward Chaining završen</h4>
+            <p>Drools je analizirao prosleđene logove. Pogledajte ažurirane parametre obima treninga:</p>
+        </div>
+
+        <ul class="novi-parametri">
+            <li>Ažurirane serije snage: <strong style="font-size: 18px; color: #2c3e50;">{{ osvezenPlan.serijeSnaga
+                    }}</strong></li>
+            <li>Kardio minutaža po treningu: <strong>{{ osvezenPlan.kardioMinuta }} min</strong></li>
+
+            <li>Poruka progresa: <strong>{{ osvezenPlan.porukaProgresa }}</strong></li>
+        </ul>
+
+        <div class="savet-info">
+            <p>💡 <strong>Napomena:</strong> Ako ste poslali 3 ili više logova sa RPE &lt;= 7, pokrenulo se
+                pravilo progresije i povećalo serije. Ako ste poslali logove sa RPE &gt;= 9, aktiviralo se
+                preopterećenje (Deload).</p>
+        </div>
+        } @else {
+        <p class="prazno-poruka">Sastavite listu trening logova sa leve strane i pošaljite ih Drools-u na analizu
+            progresa/stagnacije.</p>
+        }
+    </div>
+</div>

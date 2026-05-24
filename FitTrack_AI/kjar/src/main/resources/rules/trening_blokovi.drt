@@ -1,0 +1,44 @@
+template header
+id
+tipTreninga
+intenzitet
+minKardioDani
+minSnagaDani
+serije
+ponavljanja
+odmor
+kardioMinuti
+
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+import com.ftn.sbnz.model.TreningIntenzitet;
+import com.ftn.sbnz.model.TreningPlan;
+
+template "trening-matrica"
+
+rule "Template_TreningBlokovi_@{id}"
+    salience 42
+    no-loop true
+    when
+        $ti: TreningIntenzitet($korisnikId: korisnikId, intenzitet == "@{intenzitet}")
+        
+        $plan: TreningPlan(
+            korisnikId == $korisnikId, 
+            serijeSnaga == 0, 
+            kardioMinuta == 0,
+            kardioDani >= @{minKardioDani}, 
+            snagaDani >= @{minSnagaDani}
+        )
+    then
+        modify($plan) {
+            setSerijeSnaga(@{serije}),
+            setPonavljanjaSnaga("@{ponavljanja}"),
+            setOdmorSekundi(@{odmor}),
+            setKardioMinuta(@{kardioMinuti}),
+            setPorukaProgresa("Uspesno primenjen template za tip: @{tipTreninga} i intenzitet: @{intenzitet}.")
+        }
+        System.out.println("[Template] Generisano pravilo @{id} ispaljeno za korisnika: " + $korisnikId);
+end
+
+end template

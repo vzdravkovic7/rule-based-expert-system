@@ -1,0 +1,145 @@
+package rules;
+
+import com.ftn.sbnz.model.Korisnik;
+import com.ftn.sbnz.model.TreningPlan;
+import com.ftn.sbnz.model.TreningLog;
+import com.ftn.sbnz.model.NapredakDetektor;
+import com.ftn.sbnz.model.ProgresijaNalog;
+import java.time.LocalDate;
+
+rule "Detektuj Napredak - Spreman Za Progresiju"
+    salience 10
+    when
+        $k: Korisnik($id: id, nivoAktivnosti != null)
+        Number(intValue >= 3) from accumulate(
+            $log: TreningLog(korisnikId == $id, rpe <= 7, obradjen == false, datum.isAfter(LocalDate.now().minusDays(14))),
+            count($log)
+        )
+        not NapredakDetektor(korisnikId == $id, tip == "SPREMAN_ZA_PROGRESIJU")
+    then
+        insert(new NapredakDetektor($id, "SPREMAN_ZA_PROGRESIJU"));
+end
+
+rule "Odredi Tip Progresije - Povecaj Serije"
+    salience 10
+    when
+        $nd: NapredakDetektor($id: korisnikId, tip == "SPREMAN_ZA_PROGRESIJU")
+        $k: Korisnik(id == $id, nivoAktivnosti == "NEAKTIVAN" || nivoAktivnosti == "MINIMALNO_AKTIVAN")
+        $plan: TreningPlan(korisnikId == $id, serijeSnaga < 3)
+        not ProgresijaNalog(korisnikId == $id)
+    then
+        insert(new ProgresijaNalog($id, "POVECAJ_SERIJE"));
+end
+
+rule "Odredi Tip Progresije - Povecaj Tezinu"
+    salience 10
+    when
+        $nd: NapredakDetektor($id: korisnikId, tip == "SPREMAN_ZA_PROGRESIJU")
+        $k: Korisnik(id == $id, nivoAktivnosti == "AKTIVAN")
+        $plan: TreningPlan(korisnikId == $id, serijeSnaga >= 3)
+        not ProgresijaNalog(korisnikId == $id)
+    then
+        insert(new ProgresijaNalog($id, "POVECAJ_TEZINU"));
+end
+
+rule "Primeni Progresiju - Povecaj Serije"
+    salience 10
+    when
+        $pn: ProgresijaNalog($id: korisnikId, tip == "POVECAJ_SERIJE")
+        $plan: TreningPlan(korisnikId == $id)
+        $nd: NapredakDetektor(korisnikId == $id, tip == "SPREMAN_ZA_PROGRESIJU")
+        $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
+    then
+        modify($plan) { 
+            setSerijeSnaga($plan.getSerijeSnaga() + 1),
+            setPorukaProgresa("Progresija: Uspešno povećan broj serija snage!")
+        }
+        for(Object obj : $neobradjeniLogovi) {
+            modify((TreningLog)obj) { setObradjen(true); }
+        }
+        retract($pn); 
+        retract($nd);
+end
+
+rule "Primeni Progresiju - Povecaj Tezinu"
+    salience 10
+    when
+        $pn: ProgresijaNalog($id: korisnikId, tip == "POVECAJ_TEZINU")
+        $plan: TreningPlan(korisnikId == $id)
+        $nd: NapredakDetektor(korisnikId == $id, tip == "SPREMAN_ZA_PROGRESIJU")
+        $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
+    then
+        modify($plan) { 
+            setPorukaProgresa("PREDLOG: Povećajte radne težine za 5% na sledećem treningu (dostignut maksimalan obim serija).")
+        }
+        System.out.println("[Progresija] Predlog: Povecati tezinu za 5% korisniku sa ID: " + $id);
+        for(Object obj : $neobradjeniLogovi) {
+            modify((TreningLog)obj) { setObradjen(true); }
+        }
+        retract($pn); 
+        retract($nd);
+end
+
+rule "Detektuj Stagnaciju"
+    salience 10
+    when
+        $k: Korisnik($id: id)
+        not TreningLog(korisnikId == $id, obradjen == false, rpe <= 7, datum.isAfter(LocalDate.now().minusDays(21)))
+        $logovi: java.util.List(size > 0) from collect(TreningLog(korisnikId == $id, obradjen == false))
+        not NapredakDetektor(korisnikId == $id, tip == "PREOPTERECENJE")
+        not NapredakDetektor(korisnikId == $id, tip == "STAGNACIJA")
+    then
+        insert(new NapredakDetektor($id, "STAGNACIJA"));
+end
+
+rule "Detektuj Preopterecenje"
+    salience 12
+    when
+        $k: Korisnik($id: id)
+        Number(intValue >= 3) from accumulate(
+            $log: TreningLog(korisnikId == $id, rpe >= 9, obradjen == false, datum.isAfter(LocalDate.now().minusDays(7))),
+            count($log)
+        )
+        not NapredakDetektor(korisnikId == $id, tip == "PREOPTERECENJE")
+    then
+        insert(new NapredakDetektor($id, "PREOPTERECENJE"));
+end
+
+rule "Primeni Deload"
+    salience 10
+    when
+        $nd: NapredakDetektor($id: korisnikId, tip == "PREOPTERECENJE")
+        $plan: TreningPlan(korisnikId == $id)
+        $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
+    then
+        int proracunateSerije = (int) Math.floor($plan.getSerijeSnaga() * 0.6);
+        int noveSerije = Math.max(1, proracunateSerije);
+        
+        modify($plan) { 
+            setSerijeSnaga(noveSerije),
+            setPorukaProgresa("Deload: Smanjen obim treninga usled preopterecenja.")
+        }
+        for(Object obj : $neobradjeniLogovi) {
+            modify((TreningLog)obj) { setObradjen(true); }
+        }
+        retract($nd);
+        System.out.println("[Deload] Smanjen obim treninga za 40% usled preopterecenja.");
+end
+
+rule "Resetuj Progresiju"
+    salience 5
+    when
+        $nd: NapredakDetektor($id: korisnikId, tip == "STAGNACIJA")
+        $plan: TreningPlan(korisnikId == $id)
+        $neobradjeniLogovi: java.util.List() from collect(TreningLog(korisnikId == $id, obradjen == false))
+    then
+        modify($plan) { 
+            setKardioMinuta($plan.getKardioMinuta() + 5),
+            setPorukaProgresa("Stagnacija: Program korigovan, dodato 5 minuta kardia.")
+        }
+        for(Object obj : $neobradjeniLogovi) {
+            modify((TreningLog)obj) { setObradjen(true); }
+        }
+        retract($nd);
+        System.out.println("[Stagnacija] Program korigovan: dodato 5 minuta kardia.");
+end
